@@ -1,0 +1,8 @@
+{
+  // Cloudflare Workers config: serves the static site in ./public (no server code).
+  "name": "route-print-studio",
+  "compatibility_date": "2026-10-13",
+  "assets": {
+    "directory": "./public"
+  }
+}
