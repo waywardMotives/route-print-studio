@@ -26,53 +26,22 @@
     </section>
 
     <div class="panel">
-      <section class="step">
-        <h2><span class="n">01</span>Route</h2>
+      <div class="tabs" role="tablist" aria-label="Configure your print">
+        <button type="button" role="tab" id="t-route" aria-controls="p-route" aria-selected="true"><span class="n">1</span>Route</button>
+        <button type="button" role="tab" id="t-layout" aria-controls="p-layout" aria-selected="false" tabindex="-1"><span class="n">2</span>Layout</button>
+        <button type="button" role="tab" id="t-style" aria-controls="p-style" aria-selected="false" tabindex="-1"><span class="n">3</span>Style</button>
+        <button type="button" role="tab" id="t-print" aria-controls="p-print" aria-selected="false" tabindex="-1"><span class="n">4</span>Print</button>
+      </div>
+
+      <section class="step" role="tabpanel" id="p-route" aria-labelledby="t-route">
+        <div class="status" id="status"></div>
         <label class="drop" id="drop">
           <input type="file" id="file" accept=".gpx,.tcx,.fit,application/gpx+xml">
+          <svg class="drop-icon" viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 35h-2.5a9.5 9.5 0 0 1-1.2-18.9A12.5 12.5 0 0 1 35.6 14 8.5 8.5 0 0 1 36 31"/><path d="M24 40V23"/><path d="M17.5 29.5 24 23l6.5 6.5"/></svg>
           <strong>Upload your race file</strong>
           <span>GPX, TCX or FIT from Strava, Garmin, Coros, Suunto, Wahoo</span>
         </label>
-        <div class="status" id="status"></div>
-      </section>
-
-      <section class="step">
-        <h2><span class="n">02</span>Theme &amp; style</h2>
-        <div class="swatches" id="themes"></div>
-        <div class="sub">Map background</div>
-        <div class="chips" id="mapOn"></div>
-        <div id="mapOpts">
-          <div class="sub">Map detail</div>
-          <div class="chips" id="mapDetail"></div>
-          <div class="sub">Map strength</div>
-          <div class="chips" id="mapStrength"></div>
-          <div class="sub">Map colours</div>
-          <div class="layers" id="mapLayers"></div>
-          <p class="hint" id="mapHint" hidden></p>
-        </div>
-        <div class="sub" id="bgLabel">Background colour</div>
-        <div class="dots" id="bgs"></div>
-        <p class="hint" id="bgHint" hidden></p>
-        <div class="sub">Accent colour</div>
-        <div class="dots" id="accents"></div>
-        <p class="hint" id="accentHint" hidden></p>
-        <div class="sub">Heading font</div>
-        <div class="chips" id="headFonts"></div>
-        <div class="sub">Detail font</div>
-        <div class="chips" id="detailFonts"></div>
-        <div class="sub">Route line weight</div>
-        <div class="range"><input type="range" id="i-line" min="50" max="250" step="10" value="100" aria-label="Route line weight"><output id="o-line" for="i-line">100%</output></div>
-      </section>
-
-      <section class="step">
-        <h2><span class="n">03</span>Layout</h2>
-        <div class="chips" id="layouts"></div>
-        <div class="sub">Orientation</div>
-        <div class="chips" id="orients"></div>
-      </section>
-
-      <section class="step">
-        <h2><span class="n">04</span>Details</h2>
+        <div class="sub">Details</div>
         <div class="fields">
           <label class="f full">Event name<input id="i-title" maxlength="60"></label>
           <label class="f">Athlete name<input id="i-name" maxlength="40" placeholder="Your name"></label>
@@ -89,10 +58,50 @@
           <label class="toggle"><input type="checkbox" id="s-gain" checked> Elevation gain</label>
           <label class="toggle"><input type="checkbox" id="i-elev" checked> Elevation profile</label>
         </div>
+        <div class="next"><button type="button" class="btn-next" data-next="t-layout">Next: Layout</button></div>
       </section>
 
-      <section class="step">
-        <h2><span class="n">05</span>Size &amp; format</h2>
+      <section class="step" role="tabpanel" id="p-layout" aria-labelledby="t-layout" hidden>
+        <div class="sub first">Layout</div>
+        <div class="chips" id="layouts"></div>
+        <div class="sub">Orientation</div>
+        <div class="chips" id="orients"></div>
+        <p class="hint" id="orientHint" hidden>Gallery tiles are always square, so they hang neatly in a grid.</p>
+        <div class="next"><button type="button" class="btn-next" data-next="t-style">Next: Style</button></div>
+      </section>
+
+      <section class="step" role="tabpanel" id="p-style" aria-labelledby="t-style" hidden>
+        <div class="sub first">Map background</div>
+        <div class="chips" id="mapOn"></div>
+        <div class="sub">Theme</div>
+        <div class="swatches collapsed" id="themes"></div>
+        <div class="more-row"><button type="button" class="linkbtn more" id="themesToggle" aria-expanded="false" aria-controls="themes">Show all themes</button></div>
+        <div id="mapOpts">
+          <div class="sub">Map detail</div>
+          <div class="chips" id="mapDetail"></div>
+          <div class="sub">Map strength</div>
+          <div class="chips" id="mapStrength"></div>
+          <div class="sub">Map colours</div>
+          <div class="layers" id="mapLayers"></div>
+          <p class="hint" id="mapHint" hidden></p>
+        </div>
+        <div class="sub" id="bgLabel">Background colour</div>
+        <div class="dots" id="bgs"></div>
+        <p class="hint" id="bgHint" hidden></p>
+        <div class="sub">Accent colour</div>
+        <div class="dots" id="accents"></div>
+        <p class="hint" id="accentHint" hidden></p>
+        <div class="sub">Route line weight</div>
+        <div class="range"><input type="range" id="i-line" min="50" max="250" step="10" value="100" aria-label="Route line weight"><output id="o-line" for="i-line">100%</output></div>
+        <div class="sub">Heading font</div>
+        <div class="chips" id="headFonts"></div>
+        <div class="sub">Detail font</div>
+        <div class="chips" id="detailFonts"></div>
+        <div class="next"><button type="button" class="btn-next" data-next="t-print">Next: Print</button></div>
+      </section>
+
+      <section class="step" role="tabpanel" id="p-print" aria-labelledby="t-print" hidden>
+        <div class="sub first">Size</div>
         <div class="chips" id="sizes"></div>
         <div class="sub">Format</div>
         <div class="chips" id="formats"></div>

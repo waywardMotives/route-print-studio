@@ -51,8 +51,14 @@ docs/DEPLOY.md          Step-by-step: put the site online
   so the zoom level depends on the route, not the visitor's screen. The preview therefore matches the print.
 - The print server (next phase) renders the same style at the same 1000 px size with a pixel ratio of ~8–12
   to reach 300 dpi, then lays the SVG poster on top and exports a PDF.
-- At marathon scale (zoom ~11–12) the map shows main roads, water and parks; local streets appear for
-  shorter routes (zoom 13+). That's how the OpenMapTiles data is organised and it keeps big posters calm.
+- OpenMapTiles only carries local streets from zoom 13, and a marathon poster sits around zoom 11–12. So the
+  map detail setting also sets a render scale `k` (`MAP_DETAILS` in `config.js`): Minimal 1, Streets 2,
+  Detailed 4. The map is drawn k× larger (zoom + log2 k) and shrunk back by 1/k, with line widths corrected
+  in `map/style.js`, so lines look identical but the map pulls 1–2 zoom levels more street data. The print
+  server must use the same k: render at (1000·k) px wide with pixel ratio / k.
+- "Ink" themes (`ink:true`: Ink, Noir, Copper, Sepia, Harbour) recreate classic high-contrast city prints: their
+  own map colours skip the contrast cap, Balanced uses full colour, and picking one switches the map to Detailed.
+  Customer colour overrides on these themes are still guarded.
 
 ### Self-hosting the map data (before launch)
 

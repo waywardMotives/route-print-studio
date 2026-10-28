@@ -243,12 +243,11 @@ export function renderPoster(S, track, measure){
     ], 20), m, m, W-2*m, H-2*m);
   }
   else if(S.layout==='foundation'){
-    // Foundation: map-led top area (80%) and a solid information band
-    const rh = Math.round(H*.8);
-    if(land) under.push(routeSvg({x:m, y:27*f, w:W-2*m, h:rh-54*f}));
-    else under.push(routeSvg({x:m, y:m, w:W-2*m, h:rh-2*m}));
-    over.push(`<rect x="0" y="${rh}" width="${W}" height="${H-rh}" fill="${T.bg}"/>`);
+    // Foundation: map-led top area and an information band anchored to the bottom edge.
+    // The band has generous room above the title and fades into the map with a gradient
+    // (solid behind the text, transparent at its top edge). No rule line.
     const titleGroup = (ts, ss) => vstack([title(ts, WH, 1, 1, 1), subtitle(ss)], 6);
+    let content, padTop;
     if(land){
       const event = titleGroup(18, 6.5);
       const sr = statsRow(stats, 16, 7);
@@ -258,10 +257,19 @@ export function renderPoster(S, track, measure){
         const h = Math.max(em.h, sm.h);
         return { h, w:width, draw(x,y){ em.draw(x, y+(h-em.h)/2, ew); sm.draw(x+ew+20*f, y+(h-sm.h)/2, sw); } };
       }};
-      place(vstack([rule(), bandRow, elevation(12, 4)], 11), m, rh, W-2*m, H-rh-18*f);
+      content = vstack([bandRow, elevation(12, 4)], 11); padTop = 35;
     } else {
-      place(vstack([rule(), titleGroup(21, 7.5), statsRow(stats, 19, 8), elevation(14, 4)], 8), m, rh, W-2*m, H-rh-18*f);
+      content = vstack([titleGroup(21, 7.5), statsRow(stats, 19, 8), elevation(14, 4)], 8); padTop = 26;
     }
+    const cm = content.measure(W-2*m);
+    const contentTop = H - 18*f - cm.h, bandTop = contentTop - padTop*f;
+    const solidFrom = contentTop - 6*f;
+    over.push(`<defs><linearGradient id="bandfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.bg}" stop-opacity="0"/><stop offset=".55" stop-color="${T.bg}" stop-opacity=".82"/><stop offset="1" stop-color="${T.bg}" stop-opacity="1"/></linearGradient></defs>`+
+      `<rect x="0" y="${bandTop.toFixed(1)}" width="${W}" height="${(solidFrom-bandTop).toFixed(1)}" fill="url(#bandfade)"/>`+
+      `<rect x="0" y="${(solidFrom-.5).toFixed(1)}" width="${W}" height="${(H-solidFrom+.5).toFixed(1)}" fill="${T.bg}"/>`);
+    if(land) under.push(routeSvg({x:m, y:27*f, w:W-2*m, h:bandTop-27*f}));
+    else under.push(routeSvg({x:m, y:m, w:W-2*m, h:bandTop-m}));
+    cm.draw(m, contentTop, W-2*m);
   }
   else if(S.layout==='statement' && !land){
     // Statement / Portrait

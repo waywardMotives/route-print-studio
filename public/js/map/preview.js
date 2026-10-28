@@ -1,4 +1,4 @@
-// Live map behind the poster preview.
+// Live map behind the poster preview. (Rendered at the poster size times the map detail render scale k.)
 //
 // The map is always rendered at the poster's own coordinate size (1000 units wide = 1000 CSS px)
 // and then scaled down with a CSS transform to fit the preview. That keeps the map's zoom level
@@ -27,10 +27,10 @@ export class MapPreview {
   }
   fit(){
     if(!this.W) return;
-    const s = this.host.clientWidth / this.W;
+    const s = this.host.clientWidth / (this.W * this.k);
     this.el.style.transform = `scale(${s})`;
     if(this.map){
-      const pr = Math.min(3, Math.max(.75, (window.devicePixelRatio||1) * s));
+      const pr = Math.min(3, Math.max(.75/this.k, (window.devicePixelRatio||1) * s)); // canvas pixels stay the same at any render scale
       if(Math.abs(this.map.getPixelRatio() - pr) > .05) this.map.setPixelRatio(pr);
     }
   }
@@ -39,13 +39,15 @@ export class MapPreview {
   update(p, style, key){
     if(!this.ok || !p.view){ this.hide(); return false; }
     this.el.hidden = false;
-    const size = `${p.W}x${p.H}`;
+    // Render scale k (style.metadata.renderScale): draw k× larger, shrink by 1/k. Same picture, more street data.
+    const k = (style.metadata && style.metadata.renderScale) || 1;
+    const size = `${p.W}x${p.H}@${k}`;
     if(size !== this.size){
-      this.size = size; this.W = p.W;
-      this.el.style.width = p.W+'px'; this.el.style.height = p.H+'px';
+      this.size = size; this.W = p.W; this.k = k;
+      this.el.style.width = p.W*k+'px'; this.el.style.height = p.H*k+'px';
       if(this.map) this.map.resize();
     }
-    const cam = cameraFor(p.view, p.W, p.H);
+    const cam = cameraFor(p.view, p.W, p.H); cam.zoom += Math.log2(k);
     if(!this.map){
       this.map = new window.maplibregl.Map({
         container: this.el, style, center: cam.center, zoom: cam.zoom,
