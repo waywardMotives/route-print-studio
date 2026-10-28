@@ -1,5 +1,5 @@
 // Configurator UI: holds the customer's choices, redraws the poster and keeps the map in sync.
-import { THEMES, BG_PRESETS, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS } from './core/config.js';
+import { THEMES, BG_PRESETS, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS, MAP_LAYERS } from './core/config.js';
 import { C } from './core/color.js';
 import { parseActivity } from './core/parse.js';
 import { buildTrack, sampleTrack, fmtDur, fmtKm, esc } from './core/geo.js';
@@ -13,9 +13,9 @@ const $ = id => document.getElementById(id);
 const S = {
   theme:'midnight', layout:'classic', orient:'portrait', size:'50x70', format:'framed', frame:'black',
   sport:'run', title:'', name:'', place:'', date:'', time:'', showElev:true,
-  headFont:'shoulders', detailFont:'plex', lineW:1, bg:null, accent:null,
+  headFont:'montserrat', detailFont:'plex', lineW:1, bg:null, accent:null,
   showName:true, showPlace:true, showDate:true, showGain:true,
-  map:true, mapDetail:'streets', mapStrength:'balanced',
+  map:true, mapDetail:'streets', mapStrength:'balanced', mapColors:{},
 };
 let track = null, fileName = '';
 
@@ -77,9 +77,12 @@ function buildUI(){
     if(T.pat==='grid') pat = `<path d="M10 0V80M20 0V80M30 0V80M40 0V80M50 0V80M0 10H60M0 20H60M0 30H60M0 40H60M0 50H60M0 60H60M0 70H60" stroke="${T.patC}" stroke-width="1"/>`;
     if(T.pat==='dots') pat = `<g fill="${T.patC}">${Array.from({length:30},(_,i)=>`<circle cx="${6+(i%6)*10}" cy="${8+Math.floor(i/6)*14}" r="1.2"/>`).join('')}</g>`;
     if(T.pat==='contours') pat = `<g fill="none" stroke="${T.patC}" stroke-width="1"><path d="M-5 20C15 8 35 30 65 14"/><path d="M-5 34C20 22 40 44 65 28"/><path d="M-5 62C20 50 40 72 65 56"/></g>`;
-    return `<button type="button" class="sw" data-v="${id}"><svg viewBox="0 0 60 80" aria-hidden="true"><rect width="60" height="80" fill="${T.bg}"/>${pat}<path d="M14 52C10 38 22 30 28 22S44 14 46 28 38 44 44 52 30 62 14 52Z" fill="none" stroke="${T.route}" stroke-width="2.4" stroke-linejoin="round"/><rect x="10" y="66" width="26" height="4" fill="${T.text}"/><rect x="10" y="72" width="16" height="2" fill="${T.muted}"/><circle cx="14" cy="52" r="2.6" fill="${T.accent}"/></svg>${T.name}</button>`;
+    const M = T.map;
+    const mapArt = M ? `<path d="M0 58C14 50 26 64 40 56S56 50 60 52V68H0Z" fill="${M.water}"/><rect x="38" y="6" width="16" height="12" rx="2" fill="${M.park}"/>`+
+      (M.casing?`<path d="M0 30H60M22 0V80M0 12L60 44" stroke="${M.casing}" stroke-width="3.4"/>`:'')+`<path d="M0 30H60M22 0V80" stroke="${M.road}" stroke-width="2"/><path d="M0 12L60 44" stroke="${M.motorway}" stroke-width="2"/>` : pat;
+    return `<button type="button" class="sw" data-v="${id}"><svg viewBox="0 0 60 80" aria-hidden="true"><rect width="60" height="80" fill="${T.bg}"/>${mapArt}<path d="M14 52C10 38 22 30 28 22S44 14 46 28 38 44 44 52 30 62 14 52Z" fill="none" stroke="${T.route}" stroke-width="2.4" stroke-linejoin="round"/><rect x="10" y="66" width="26" height="4" fill="${T.text}"/><rect x="10" y="72" width="16" height="2" fill="${T.muted}"/><circle cx="14" cy="52" r="2.6" fill="${T.accent}"/></svg>${T.name}</button>`;
   }).join('');
-  $('themes').onclick = e => { const b = e.target.closest('button'); if(!b) return; S.theme = b.dataset.v; S.bg = null; S.accent = null; draw(); };
+  $('themes').onclick = e => { const b = e.target.closest('button'); if(!b) return; S.theme = b.dataset.v; S.bg = null; S.accent = null; S.mapColors = {}; draw(); };
 
   const colorRow = (el,list,key,inputId) => {
     el.innerHTML = `<button type="button" class="chip" data-v="">Theme</button>` +
@@ -92,6 +95,10 @@ function buildUI(){
   colorRow($('accents'),ACCENT_PRESETS,'accent','c-accent');
 
   chipGroup($('mapOn'),[{id:'on',name:'Street map'},{id:'off',name:'Plain'}],'mapOnId',null,v=>{ S.map = v==='on'; });
+  $('mapLayers').innerHTML = MAP_LAYERS.map(l=>`<label class="layer-sw" title="Change ${l.name.toLowerCase()} colour"><span class="swatch"></span>${l.name}<input type="color" id="ml-${l.id}" data-layer="${l.id}" aria-label="${l.name} colour"></label>`).join('') +
+    `<button type="button" class="linkbtn" id="mlReset" hidden>Reset map colours</button>`;
+  $('mapLayers').addEventListener('input',e=>{ const k = e.target.dataset && e.target.dataset.layer; if(!k) return; S.mapColors = {...S.mapColors, [k]: e.target.value}; draw(); });
+  $('mlReset').addEventListener('click',()=>{ S.mapColors = {}; draw(); });
   chipGroup($('mapDetail'),MAP_DETAILS,'mapDetail');
   chipGroup($('mapStrength'),MAP_STRENGTHS,'mapStrength');
   chipGroup($('layouts'),LAYOUTS,'layout',null,v=>{ if(v==='tile' && !SIZES.find(z=>z.id===S.size&&z.w===z.h)) S.size='20x20'; });
@@ -127,7 +134,7 @@ function draw(){
 
   // Map layer: only rebuild the style when its inputs change; camera follows the route every time.
   const mapShown = S.map && mapView.update(p, buildMapStyle(p.T,{detail:S.mapDetail,strength:S.mapStrength}),
-    [p.T.bg,p.T.text,S.mapDetail,S.mapStrength].join('|'));
+    [p.T.bg,JSON.stringify(p.T.map),S.mapDetail,S.mapStrength].join('|'));
   if(!S.map) mapView.hide();
   $('credit').hidden = !mapShown;
   $('mapOpts').hidden = !S.map;
@@ -158,6 +165,14 @@ function draw(){
     custom.classList.toggle('on',isCustom); custom.style.setProperty('--c',isCustom ? v : '');
     const note = p.T.notes[key]; $(hint).textContent = note; $(hint).hidden = !note;
   }
+  // Map colour swatches show the colours actually used (after guardrails).
+  for(const l of MAP_LAYERS){
+    const c = p.T.map[l.id], inp = $('ml-'+l.id);
+    inp.closest('.layer-sw').querySelector('.swatch').style.background = c;
+    if(document.activeElement !== inp) inp.value = c;
+  }
+  $('mlReset').hidden = !Object.keys(S.mapColors).length;
+  $('mapHint').textContent = p.T.notes.map || ''; $('mapHint').hidden = !p.T.notes.map;
   // Dim accent swatches that would nearly vanish on the current background (still clickable; they get corrected).
   document.querySelectorAll('#accents .dot-sw[data-v]').forEach(b=>{
     const weak = C.contrast(b.dataset.v,p.T.bg) < 2;

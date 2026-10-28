@@ -1,12 +1,29 @@
 // Product configuration: themes, fonts, layouts, sizes, formats and map options.
 // Everything the customer can choose lives here, so adding or retiring an option is a one-line change.
 
+// map = per-layer map colours (land is the background). casing = outline drawn under light roads.
 export const THEMES = {
-  midnight:  {name:'Midnight',  bg:'#0e131d', pat:'none',     patC:'',        route:'#f4efe6', glow:true, rw:3.2, accent:'#f2b134', text:'#f4efe6', muted:'#8790a3', elev:'#f4efe6', elevOp:.16, rule:'#2a3242'},
-  paper:     {name:'Paper',     bg:'#f4f4f0', pat:'none',     patC:'',        route:'#15171c', rw:2.8, accent:'#d6402f', text:'#15171c', muted:'#6e7179', elev:'#15171c', elevOp:.09, rule:'#d5d5ce'},
-  trail:     {name:'Trail',     bg:'#e5e9d9', pat:'contours', patC:'#c9cfb5', route:'#c4461b', rw:3.6, accent:'#2f3b26', text:'#2b3522', muted:'#68725d', elev:'#2f3b26', elevOp:.13, rule:'#c2c9ad'},
-  blueprint: {name:'Blueprint', bg:'#173556', pat:'grid',     patC:'#24496f', route:'#ffffff', rw:3,   accent:'#ffcf5c', text:'#eef3f9', muted:'#9cb2cb', elev:'#ffffff', elevOp:.15, rule:'#2f5884'},
-  coastal:   {name:'Coastal',   bg:'#dce7ec', pat:'dots',     patC:'#b8cbd5', route:'#0c3b5e', rw:3.2, accent:'#e76f51', text:'#0c3b5e', muted:'#5a7889', elev:'#0c3b5e', elevOp:.11, rule:'#b8cbd5'},
+  midnight:  {name:'Midnight',  bg:'#0e131d', pat:'none',     patC:'',        route:'#f4efe6', glow:true, rw:3.2, accent:'#f2b134', text:'#f4efe6', muted:'#8790a3', elev:'#f4efe6', elevOp:.16, rule:'#2a3242',
+    map:{water:'#1b2b45', park:'#15261f', building:'#171e2b', minor:'#222b3b', road:'#2d384d', motorway:'#3c4860', rail:'#2d384d'}},
+  paper:     {name:'Paper',     bg:'#f4f4f0', pat:'none',     patC:'',        route:'#15171c', rw:2.8, accent:'#d6402f', text:'#15171c', muted:'#6e7179', elev:'#15171c', elevOp:.09, rule:'#d5d5ce',
+    map:{water:'#dde5ea', park:'#e5e9da', building:'#eaeae4', minor:'#dcdcd5', road:'#cfcfc7', motorway:'#c1c1b8', rail:'#cfcfc7'}},
+  trail:     {name:'Trail',     bg:'#e5e9d9', pat:'contours', patC:'#c9cfb5', route:'#c4461b', rw:3.6, accent:'#2f3b26', text:'#2b3522', muted:'#68725d', elev:'#2f3b26', elevOp:.13, rule:'#c2c9ad',
+    map:{water:'#b4d0d3', park:'#cad9ad', building:'#dbe0cc', minor:'#d2d7c0', road:'#c4caaf', motorway:'#cdb48c', rail:'#bfc5aa'}},
+  blueprint: {name:'Blueprint', bg:'#173556', pat:'grid',     patC:'#24496f', route:'#ffffff', rw:3,   accent:'#ffcf5c', text:'#eef3f9', muted:'#9cb2cb', elev:'#ffffff', elevOp:.15, rule:'#2f5884',
+    map:{water:'#112846', park:'#1b3e5c', building:'#1d3c5f', minor:'#294c73', road:'#3a618e', motorway:'#5079a9', rail:'#3a618e'}},
+  coastal:   {name:'Coastal',   bg:'#dce7ec', pat:'dots',     patC:'#b8cbd5', route:'#0c3b5e', rw:3.2, accent:'#e76f51', text:'#0c3b5e', muted:'#5a7889', elev:'#0c3b5e', elevOp:.11, rule:'#b8cbd5',
+    map:{water:'#a6c7db', park:'#cde0d2', building:'#d2dfe5', minor:'#c4d4dc', road:'#b2c6d0', motorway:'#9db5c1', rail:'#b2c6d0'}},
+  // Colourful, map-first themes
+  tangerine: {name:'Tangerine', bg:'#f7efe4', pat:'none', patC:'', route:'#e2522a', rw:3.4, accent:'#1f6f8b', text:'#2a1e17', muted:'#7a6658', elev:'#2a1e17', elevOp:.1, rule:'#e3d5c3',
+    map:{water:'#9fd0de', park:'#cfe0a8', building:'#efe1cf', minor:'#ffffff', road:'#ffffff', motorway:'#f6c46a', rail:'#d9c8b4', casing:'#d9c3a6'}},
+  alpine:    {name:'Alpine',    bg:'#eef1ea', pat:'none', patC:'', route:'#d62828', rw:3.4, accent:'#1d3557', text:'#1d2a24', muted:'#5f6e66', elev:'#1d2a24', elevOp:.1, rule:'#d4dbce',
+    map:{water:'#8fbce0', park:'#b4d3a2', building:'#e1e5db', minor:'#ffffff', road:'#ffffff', motorway:'#f2cf6b', rail:'#c9cfc3', casing:'#bfc9b8'}},
+  riso:      {name:'Riso',      bg:'#f3e9df', pat:'none', patC:'', route:'#ff4a3d', rw:3.4, accent:'#1f2a5a', text:'#1f2a5a', muted:'#5f6488', elev:'#1f2a5a', elevOp:.1, rule:'#e3d3c4',
+    map:{water:'#5c86c8', park:'#f4b6a6', building:'#eadacb', minor:'#ffffff', road:'#ffffff', motorway:'#f2c14e', rail:'#d8c4b3', casing:'#d6bca6'}},
+  lagoon:    {name:'Lagoon',    bg:'#0f3b3d', pat:'none', patC:'', route:'#ffb000', rw:3.4, accent:'#ffb000', text:'#f3ead7', muted:'#9ebab3', elev:'#f3ead7', elevOp:.14, rule:'#23585a',
+    map:{water:'#1c6c7b', park:'#1b5143', building:'#134649', minor:'#285e5d', road:'#8f9c7c', motorway:'#d8c58f', rail:'#285e5d'}},
+  neon:      {name:'Neon',      bg:'#140f26', pat:'none', patC:'', route:'#2ef2d0', glow:true, rw:3.2, accent:'#ff4fa3', text:'#f5f0ff', muted:'#9b90c4', elev:'#f5f0ff', elevOp:.14, rule:'#2b2350',
+    map:{water:'#1b2552', park:'#172d2b', building:'#1c1737', minor:'#33265f', road:'#56399d', motorway:'#ff4fa3', rail:'#33265f'}},
 };
 
 export const BG_PRESETS = [
@@ -18,13 +35,15 @@ export const ACCENT_PRESETS = [
   {name:'Cobalt',hex:'#2f5fd0'},{name:'Violet',hex:'#6b4fbf'},{name:'Rose',hex:'#d4577b'},{name:'Ink',hex:'#15171c'},{name:'Chalk',hex:'#f4efe6'}];
 
 // heavy = big titles and the distance figure, bold = secondary headings.
+// scale = how much bigger the font can be set than Montserrat in the same space (condensed faces > 1).
 export const HEAD_FONTS = [
-  {id:'shoulders', name:'Big Shoulders',    f:'"Big Shoulders Display","Arial Narrow",Impact,sans-serif', heavy:800, bold:700},
-  {id:'barlowc',   name:'Barlow Condensed', f:'"Barlow Condensed","Arial Narrow",sans-serif',            heavy:800, bold:700},
-  {id:'oswald',    name:'Oswald',           f:'Oswald,"Arial Narrow",sans-serif',                         heavy:700, bold:600},
-  {id:'archivo',   name:'Archivo',          f:'Archivo,"Helvetica Neue",Arial,sans-serif',                heavy:800, bold:700},
-  {id:'playfair',  name:'Playfair',         f:'"Playfair Display",Georgia,serif',                         heavy:800, bold:700},
-  {id:'fraunces',  name:'Fraunces',         f:'Fraunces,Georgia,serif',                                   heavy:800, bold:700},
+  {id:'montserrat', name:'Montserrat',      f:'Montserrat,"Helvetica Neue",Arial,sans-serif',             heavy:800, bold:700, scale:1},
+  {id:'shoulders', name:'Big Shoulders',    f:'"Big Shoulders Display","Arial Narrow",Impact,sans-serif', heavy:800, bold:700, scale:1.6},
+  {id:'barlowc',   name:'Barlow Condensed', f:'"Barlow Condensed","Arial Narrow",sans-serif',            heavy:800, bold:700, scale:1.4},
+  {id:'oswald',    name:'Oswald',           f:'Oswald,"Arial Narrow",sans-serif',                         heavy:700, bold:600, scale:1.35},
+  {id:'archivo',   name:'Archivo',          f:'Archivo,"Helvetica Neue",Arial,sans-serif',                heavy:800, bold:700, scale:1.08},
+  {id:'playfair',  name:'Playfair',         f:'"Playfair Display",Georgia,serif',                         heavy:800, bold:700, scale:1.12},
+  {id:'fraunces',  name:'Fraunces',         f:'Fraunces,Georgia,serif',                                   heavy:800, bold:700, scale:1.08},
 ];
 
 // stat = numbers, label = small caps labels and subtitle. wv/wl = their weights.
@@ -36,7 +55,7 @@ export const DETAIL_FONTS = [
   {id:'barlow',    name:'Barlow',              stat:'Barlow,system-ui,sans-serif',             label:'Barlow,system-ui,sans-serif',              wv:500, wl:600},
 ];
 
-export const LAYOUTS = [{id:'classic',name:'Classic'},{id:'statement',name:'Statement'},{id:'minimal',name:'Minimal'},{id:'tile',name:'Gallery tile'}];
+export const LAYOUTS = [{id:'classic',name:'Classic'},{id:'foundation',name:'Foundation'},{id:'statement',name:'Statement'},{id:'minimal',name:'Minimal'},{id:'tile',name:'Gallery tile'}];
 
 export const SIZES = [
   {id:'20x20',name:'20×20',w:20,h:20},{id:'30x30',name:'30×30',w:30,h:30},
@@ -55,4 +74,7 @@ export const MAP_SOURCE = {
   attribution: '© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap',
 };
 export const MAP_DETAILS = [{id:'minimal',name:'Minimal'},{id:'streets',name:'Streets'},{id:'detailed',name:'Detailed'}];
-export const MAP_STRENGTHS = [{id:'subtle',name:'Subtle',v:.6},{id:'balanced',name:'Balanced',v:1},{id:'bold',name:'Bold',v:1.5}];
+// v = tint strength for themes without a palette; p = how far palette colours are applied (1 = full colour).
+export const MAP_STRENGTHS = [{id:'subtle',name:'Subtle',v:.6,p:.5},{id:'balanced',name:'Balanced',v:1,p:.8},{id:'bold',name:'Bold',v:1.5,p:1}];
+// Map layers customers can recolour.
+export const MAP_LAYERS = [{id:'water',name:'Water'},{id:'park',name:'Parks'},{id:'road',name:'Roads'},{id:'building',name:'Buildings'}];

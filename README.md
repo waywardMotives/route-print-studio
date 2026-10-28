@@ -35,10 +35,15 @@ docs/DEPLOY.md          Step-by-step: put the site online
 | Add or remove a theme, colour preset, font, size or format | `public/js/core/config.js` |
 | How strong the map looks, which map features show | `public/js/map/style.js` |
 | Colour guardrail thresholds | `public/js/core/color.js` |
-| Poster layouts | `public/js/core/poster.js` |
+| Poster layouts (mirroring the Figma "Layout components") | `public/js/core/poster.js` |
+| Map palette of a theme | `map` of that theme in `public/js/core/config.js` |
 
 ## How the map works
 
+- Each theme has a map palette (`map` in `config.js`): land, water, parks, buildings, minor/major roads,
+  motorways, rail, and an optional road casing for light "printed city map" themes. Customers can recolour
+  water, parks, roads and buildings; `core/theme.js` guards those choices (no neon, layers can't outshine the
+  route). "Map strength" sets how strongly the palette is applied over the land colour.
 - Map data: OpenStreetMap, served as vector tiles by OpenFreeMap (free, commercial use allowed, no API key).
   Licence: every print shows "© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap"; the website shows
   the same credit with links under the preview.

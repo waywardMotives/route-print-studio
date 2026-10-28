@@ -41,3 +41,16 @@ export function guardAccent(hex,bg){
   for(let i=0;i<50 && C.contrast(C.fromHsl(h,s,l),bg) < 3;i++){ l += lightBg ? -.02 : .02; l = Math.max(0,Math.min(1,l)); }
   return {hex: C.fromHsl(h,s,l), softened: s0-s>.05, shifted: Math.abs(l-l0)>.02, dir: lightBg ? 'Darkened' : 'Lightened'};
 }
+
+// Map layers: keep a layer from competing with the route. Blends it toward the land colour
+// until its contrast against the land is at most `max`, and (optionally) until the route
+// still stands out against it by at least `routeMin`.
+export function guardLayer(hex, land, max, route=null, routeMin=0, satMax=1){
+  const [h0,s0,l0] = C.toHsl(hex);
+  const soft = s0 > satMax ? C.fromHsl(h0, satMax, l0) : hex; // neon colours can't be printed
+  hex = soft;
+  let c = hex, t = 0;
+  const ok = x => C.contrast(x,land) <= max && (!route || C.contrast(route,x) >= routeMin);
+  while(!ok(c) && t < 1){ t += .05; c = C.mix(hex, land, t); }
+  return {hex:c, adjusted: t > .07 || s0 > satMax + .05};
+}
