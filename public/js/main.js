@@ -6,6 +6,7 @@ import { buildTrack, sampleTrack, fmtDur, fmtKm, esc } from './core/geo.js';
 import { renderPoster } from './core/poster.js';
 import { buildMapStyle } from './map/style.js';
 import { MapPreview } from './map/preview.js';
+import { exportPrintFile } from './export/printfile.js';
 
 const $ = id => document.getElementById(id);
 
@@ -227,6 +228,26 @@ function draw(){
 }
 
 // ---------- start ----------
+// ---------- internal: print file export (open the site with ?print) ----------
+if(/[?&#]print\b/.test(location.search + location.hash)){
+  $('exportWrap').hidden = false;
+  $('exportBtn').addEventListener('click', async () => {
+    const btn = $('exportBtn'), st = $('exportStatus');
+    btn.disabled = true;
+    try{
+      const p = renderPoster(S, track, measure);
+      const slug = s => (s||'').toLowerCase().normalize('NFKD').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'');
+      const name = [slug(S.title)||'route', S.size, S.orient, S.theme].join('_') + '.jpg';
+      const out = await exportPrintFile({ p, mapOn: S.map, name,
+        style: buildMapStyle(p.T,{detail:S.mapDetail,strength:S.mapStrength}), progress: m => { st.textContent = m; } });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(out.blob); a.download = out.name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 60000);
+      st.textContent = `Saved ${out.name}: ${out.tw.toLocaleString('en-GB')} × ${out.th.toLocaleString('en-GB')} px, ${(out.blob.size/1048576).toFixed(1)} MB.`;
+    }catch(e){ console.error(e); st.textContent = 'Couldn’t create the file: ' + (e.message || e); }
+    finally{ btn.disabled = false; }
+  });
+}
+
 const posterEl = $('poster');
 svgHost = document.createElement('div'); svgHost.className = 'svg-layer'; posterEl.appendChild(svgHost);
 mapView = new MapPreview(posterEl);

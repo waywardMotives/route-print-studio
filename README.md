@@ -25,6 +25,7 @@ js/core/geo.js          Distance, elevation, line simplification, map projection
 js/core/poster.js       Draws the poster as SVG (no browser APIs, so the print server can reuse it)
 js/map/style.js         Generates the map style from the poster colours
 js/map/preview.js       The live map behind the preview, aligned exactly to the route
+js/export/printfile.js  300 dpi print file export (internal, ?print)
 docs/DEPLOY.md          Step-by-step: put the site online
 ```
 
@@ -68,6 +69,16 @@ OpenFreeMap's public servers are donation-funded with no uptime guarantee. Befor
 1. Download the OpenFreeMap planet file (MBTiles) and convert it to a single PMTiles file with the `pmtiles` tool.
 2. Upload it to Cloudflare R2 and serve it with the Protomaps Cloudflare Worker.
 3. Change `MAP_SOURCE.url` in `public/js/core/config.js`. The schema stays the same, so no style changes are needed.
+
+## Print files (internal)
+
+Open the site with `?print` at the end of the address (e.g. `https://…workers.dev/?print`). The Print tab then
+shows **Download print file**: it renders the current design at 300 dpi for the selected size and saves a JPEG
+(50×70 cm = 5,906 × 8,268 px). Use desktop Chrome; very large sizes exceed Safari's canvas limits.
+
+How it works (`js/export/printfile.js`): a hidden map renders the same style at print resolution in tiles that are
+stitched together, then the poster SVG is drawn on top with its Google Fonts embedded. The print server will
+reuse the same approach. Customers never see the button.
 
 ## Run it on your own computer
 

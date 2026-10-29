@@ -151,3 +151,6 @@ label.f select{appearance:none;-webkit-appearance:none;padding-right:40px;cursor
 @media (prefers-reduced-motion:reduce){.chip-theme .tick,.linkbtn.more::after{transition:none}}
 .swatches .sw[hidden]{display:none}
 .chips .chip[hidden]{display:none}
+.export{margin-top:4px}
+.export .btn-next{margin-top:2px}
+.export .btn-next:disabled{opacity:.5;cursor:progress}

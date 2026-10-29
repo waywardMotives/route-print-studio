@@ -106,6 +106,12 @@
         <div class="sub">Format</div>
         <div class="chips" id="formats"></div>
         <div id="frameWrap"><div class="sub">Frame</div><div class="chips" id="frames"></div></div>
+        <!-- Internal tool, shown only with ?print in the address: saves the 300 dpi print file. -->
+        <div class="export" id="exportWrap" hidden>
+          <div class="sub">Print file (internal)</div>
+          <button type="button" class="btn-next" id="exportBtn">Download print file</button>
+          <p class="hint" id="exportStatus" aria-live="polite">300 dpi JPEG at the selected size. Use desktop Chrome.</p>
+        </div>
       </section>
     </div>
   </main>
