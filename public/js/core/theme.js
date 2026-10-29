@@ -50,7 +50,7 @@ function resolveMap(T, S, notes){
   if(o.building) m.building = o.building;
   if(o.road){ m.road = o.road; m.motorway = o.road; m.minor = C.mix(land, o.road, .75); delete m.casing; }
   let adjusted = false;
-  const g = (k, max, routeMin) => { if(!m[k]) return; const own = !o[k==='minor'||k==='motorway'?'road':k]; const ink = T.inkMap && own; const r = guardLayer(m[k], land, ink ? 21 : max, T.route, ink ? Math.min(routeMin, 1.15) : routeMin, o[k==='minor'||k==='motorway'?'road':k] ? .5 : 1); if(r.adjusted && o[k==='minor'||k==='motorway'?'road':k]) adjusted = true; m[k] = r.hex; };
+  const g = (k, max, routeMin) => { if(!m[k]) return; const own = !o[k==='minor'||k==='motorway'?'road':k]; const ink = T.inkMap && own; const r = guardLayer(m[k], land, ink ? 21 : max, T.route, ink ? 1 : routeMin, o[k==='minor'||k==='motorway'?'road':k] ? .5 : 1); if(r.adjusted && o[k==='minor'||k==='motorway'?'road':k]) adjusted = true; m[k] = r.hex; };
   g('water', 3.2, 1.6); g('park', 3.2, 1.6); g('building', 1.7, 2);
   g('minor', 2.6, 2); g('road', 2.6, 2); g('motorway', 3, 1.8); g('rail', 2.2, 2);
   if(adjusted) notes.map = 'Some map colours were toned down so the route stays the hero.';

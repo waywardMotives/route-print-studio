@@ -13,7 +13,7 @@ export function buildMapStyle(T, {detail='streets', strength='balanced'} = {}){
   // Ink themes: full colour at Balanced, heavier roads at Bold, slightly heavier roads overall.
   const ink = !!T.inkMap;
   const p = ink ? {subtle:.7, balanced:1, bold:1}[st.id] ?? 1 : st.p;
-  const wm = ink ? (st.id==='bold' ? 1.35 : 1.15) : 1;
+  const wm = ink ? (st.id==='bold' ? 1.3 : 1.05) : 1;
   const col = k => C.mix(land, M[k] || M.road, p);
   const full = detail==='detailed', streets = detail!=='minimal';
   // Render scale k (see MAP_DETAILS): zoom stops shift by log2(k) and widths scale by k, so after the
@@ -21,19 +21,20 @@ export function buildMapStyle(T, {detail='streets', strength='balanced'} = {}){
   const k = (MAP_DETAILS.find(d=>d.id===detail) || {}).k || 1, dz = Math.log2(k);
   const width = (stops, f=1) => ['interpolate',['exponential',1.6],['zoom'], ...stops.flatMap(([z,w])=>[z+dz,w*f*k])];
   const cls = list => ['match',['get','class'],list,true,false];
-  const road = (id, classes, color, stops, extra={}) => ({
+  const road = (id, classes, color, stops, extra={}, f=1) => ({
     id, type:'line', source:'omt', 'source-layer':'transportation',
     filter:['all', cls(classes), ['!=',['get','brunnel'],'tunnel']],
     layout:{'line-cap':'round','line-join':'round'},
-    paint:{'line-color':color, 'line-width':width(stops, wm), ...extra},
+    paint:{'line-color':color, 'line-width':width(stops, wm*f), ...extra},
   });
-  // Road classes: [id, classes, palette key, width stops, shown?]
+  // Road classes: [id, classes, palette key, width stops, shown?, ink-theme width factor]
+  // Ink themes get a clear hierarchy: heavy motorways, fine side streets.
   const roads = [
-    ['service', ['service','track'], 'minor', [[13,.3],[16,1.2],[18,3]], full],
-    ['minor', ['minor'], 'minor', [[11,.3],[14,1],[17,4]], streets],
-    ['tertiary', ['tertiary'], 'road', [[10,.3],[13,1],[17,5]], streets],
-    ['major', ['primary','secondary'], 'road', [[8,.35],[12,1.2],[16,5.5],[18,10]], true],
-    ['motorway', ['motorway','trunk'], 'motorway', [[6,.45],[10,1.1],[14,4],[18,11]], true],
+    ['service', ['service','track'], 'minor', [[13,.3],[16,1.2],[18,3]], full, .75],
+    ['minor', ['minor'], 'minor', [[11,.3],[14,1],[17,4]], streets, .85],
+    ['tertiary', ['tertiary'], 'road', [[10,.3],[13,1],[17,5]], streets, 1],
+    ['major', ['primary','secondary'], 'road', [[8,.35],[12,1.2],[16,5.5],[18,10]], true, 1.25],
+    ['motorway', ['motorway','trunk'], 'motorway', [[6,.45],[10,1.1],[14,4],[18,11]], true, 1.6],
   ].filter(r=>r[4]);
 
   const layers = [
@@ -51,7 +52,7 @@ export function buildMapStyle(T, {detail='streets', strength='balanced'} = {}){
     const cas = C.mix(land, M.casing, Math.max(st.p, .95));
     for(const [id,classes,,stops] of roads) layers.push(road(id+'-casing', classes, cas, stops.map(([z,w])=>[z,w*2+.6])));
   }
-  for(const [id,classes,key,stops] of roads) layers.push(road(id, classes, col(key), stops));
+  for(const [id,classes,key,stops,,h] of roads) layers.push(road(id, classes, col(key), stops, {}, ink ? h : 1));
   if(full || (ink && streets)) layers.push(road('rail', ['rail'], col('rail'), [[11,.4],[16,1.4]], {'line-dasharray':[3,2]}));
 
   return {

@@ -2,41 +2,45 @@
 // Everything the customer can choose lives here, so adding or retiring an option is a one-line change.
 
 // map = per-layer map colours (land is the background). casing = outline drawn under light roads.
+// ink:true = designed city-print theme: bold, purposeful contrast (its own map colours skip the contrast cap,
+// full map strength, road hierarchy with heavy motorways and fine side streets). detail = map detail switched
+// to when the theme is picked (customers can still change it).
 export const THEMES = {
-  midnight:  {name:'Midnight',  bg:'#0e131d', pat:'none',     patC:'',        route:'#f4efe6', glow:true, rw:3.2, accent:'#f2b134', text:'#f4efe6', muted:'#8790a3', elev:'#f4efe6', elevOp:.16, rule:'#2a3242',
-    map:{water:'#1b2b45', park:'#15261f', building:'#171e2b', minor:'#222b3b', road:'#2d384d', motorway:'#3c4860', rail:'#2d384d'}},
-  paper:     {name:'Paper',     bg:'#f4f4f0', pat:'none',     patC:'',        route:'#15171c', rw:2.8, accent:'#d6402f', text:'#15171c', muted:'#6e7179', elev:'#15171c', elevOp:.09, rule:'#d5d5ce',
-    map:{water:'#dde5ea', park:'#e5e9da', building:'#eaeae4', minor:'#dcdcd5', road:'#cfcfc7', motorway:'#c1c1b8', rail:'#cfcfc7'}},
-  trail:     {name:'Trail',     bg:'#e5e9d9', pat:'contours', patC:'#c9cfb5', route:'#c4461b', rw:3.6, accent:'#2f3b26', text:'#2b3522', muted:'#68725d', elev:'#2f3b26', elevOp:.13, rule:'#c2c9ad',
-    map:{water:'#b4d0d3', park:'#cad9ad', building:'#dbe0cc', minor:'#d2d7c0', road:'#c4caaf', motorway:'#cdb48c', rail:'#bfc5aa'}},
-  blueprint: {name:'Blueprint', bg:'#173556', pat:'grid',     patC:'#24496f', route:'#ffffff', rw:3,   accent:'#ffcf5c', text:'#eef3f9', muted:'#9cb2cb', elev:'#ffffff', elevOp:.15, rule:'#2f5884',
-    map:{water:'#112846', park:'#1b3e5c', building:'#1d3c5f', minor:'#294c73', road:'#3a618e', motorway:'#5079a9', rail:'#3a618e'}},
-  coastal:   {name:'Coastal',   bg:'#dce7ec', pat:'dots',     patC:'#b8cbd5', route:'#0c3b5e', rw:3.2, accent:'#e76f51', text:'#0c3b5e', muted:'#5a7889', elev:'#0c3b5e', elevOp:.11, rule:'#b8cbd5',
-    map:{water:'#a6c7db', park:'#cde0d2', building:'#d2dfe5', minor:'#c4d4dc', road:'#b2c6d0', motorway:'#9db5c1', rail:'#b2c6d0'}},
-  // Colourful, map-first themes
-  tangerine: {name:'Tangerine', bg:'#f7efe4', pat:'none', patC:'', route:'#e2522a', rw:3.4, accent:'#1f6f8b', text:'#2a1e17', muted:'#7a6658', elev:'#2a1e17', elevOp:.1, rule:'#e3d5c3',
-    map:{water:'#9fd0de', park:'#cfe0a8', building:'#efe1cf', minor:'#ffffff', road:'#ffffff', motorway:'#f6c46a', rail:'#d9c8b4', casing:'#cbae89'}},
-  alpine:    {name:'Alpine',    bg:'#eef1ea', pat:'none', patC:'', route:'#d62828', rw:3.4, accent:'#1d3557', text:'#1d2a24', muted:'#5f6e66', elev:'#1d2a24', elevOp:.1, rule:'#d4dbce',
-    map:{water:'#8fbce0', park:'#b4d3a2', building:'#e1e5db', minor:'#ffffff', road:'#ffffff', motorway:'#f2cf6b', rail:'#c9cfc3', casing:'#acb8a2'}},
-  riso:      {name:'Riso',      bg:'#f3e9df', pat:'none', patC:'', route:'#ff4a3d', rw:3.4, accent:'#1f2a5a', text:'#1f2a5a', muted:'#5f6488', elev:'#1f2a5a', elevOp:.1, rule:'#e3d3c4',
-    map:{water:'#5c86c8', park:'#f4b6a6', building:'#eadacb', minor:'#ffffff', road:'#ffffff', motorway:'#f2c14e', rail:'#d8c4b3', casing:'#c8a78d'}},
-  lagoon:    {name:'Lagoon',    bg:'#0f3b3d', pat:'none', patC:'', route:'#ffb000', rw:3.4, accent:'#ffb000', text:'#f3ead7', muted:'#9ebab3', elev:'#f3ead7', elevOp:.14, rule:'#23585a',
-    map:{water:'#1c6c7b', park:'#1b5143', building:'#134649', minor:'#285e5d', road:'#8f9c7c', motorway:'#d8c58f', rail:'#285e5d'}},
-  neon:      {name:'Neon',      bg:'#140f26', pat:'none', patC:'', route:'#2ef2d0', glow:true, rw:3.2, accent:'#ff4fa3', text:'#f5f0ff', muted:'#9b90c4', elev:'#f5f0ff', elevOp:.14, rule:'#2b2350',
-    map:{water:'#1b2552', park:'#172d2b', building:'#1c1737', minor:'#33265f', road:'#56399d', motorway:'#ff4fa3', rail:'#33265f'}},
-  // Ink themes: classic city-map prints with crisp, high-contrast streets (ink:true lifts the contrast cap
-  // on the theme's own map colours, uses full map strength and slightly heavier roads; rail is shown).
-  // detail = map detail switched to when the theme is picked (customers can still change it).
+  midnight:  {name:'Midnight', bg:'#0f1626', pat:'none', patC:'', route:'#f5b83d', rw:4.4, accent:'#f5b83d', text:'#eef2f8', muted:'#8e9ab0', elev:'#eef2f8', elevOp:0.15, rule:'#25314a', ink:true, detail:'detailed',
+    map:{water:'#070c18', park:'#14213a', building:'#152036', minor:'#3f4f6c', road:'#a9b8d4', motorway:'#dce4f2', rail:'#34425c'}},
   ink:       {name:'Ink',       bg:'#f6f3ee', pat:'none', patC:'', route:'#c9473a', rw:4.4, accent:'#c9473a', text:'#151515', muted:'#6d6862', elev:'#151515', elevOp:.1, rule:'#ddd7cd', ink:true, detail:'detailed',
     map:{water:'#c9c3ba', park:'#ebe7df', building:'#e4dfd6', minor:'#2e2e2e', road:'#161616', motorway:'#0b0b0b', rail:'#8d8780'}},
   noir:      {name:'Noir',      bg:'#0b0b0b', pat:'none', patC:'', route:'#d9534f', rw:4.4, accent:'#d9534f', text:'#f5f5f2', muted:'#9a9a96', elev:'#f5f5f2', elevOp:.14, rule:'#2a2a2a', ink:true, detail:'detailed',
     map:{water:'#161616', park:'#121212', building:'#171717', minor:'#9d9d9d', road:'#f4f4f4', motorway:'#ffffff', rail:'#6e6e6e'}},
-  copper:    {name:'Copper',    bg:'#f9f8f6', pat:'none', patC:'', route:'#d64a3c', rw:4.4, accent:'#8a2b12', text:'#2b1a13', muted:'#79685f', elev:'#2b1a13', elevOp:.1, rule:'#e6e1dc', ink:true, detail:'detailed',
-    map:{water:'#e6e2df', park:'#f0eeea', building:'#ece9e5', minor:'#5c5c5c', road:'#8a2b12', motorway:'#8a2b12', rail:'#a3a3a3'}},
-  sepia:     {name:'Sepia',     bg:'#f2e7d7', pat:'none', patC:'', route:'#3b6e7b', rw:4.4, accent:'#3b6e7b', text:'#3d2b21', muted:'#7b6656', elev:'#3d2b21', elevOp:.11, rule:'#e0d1bb', ink:true, detail:'detailed',
-    map:{water:'#d5c5a9', park:'#e7dbc5', building:'#e8dbc7', minor:'#6e5648', road:'#3e2c22', motorway:'#33241b', rail:'#8f7d6b'}},
+  regatta:   {name:'Regatta', bg:'#f2ede3', pat:'none', patC:'', route:'#e2553a', rw:4.4, accent:'#e2553a', text:'#18213a', muted:'#66697a', elev:'#18213a', elevOp:0.1, rule:'#ddd6c8', ink:true, detail:'detailed',
+    map:{water:'#20409a', park:'#e2e6d4', building:'#e7e1d5', minor:'#414c66', road:'#18213a', motorway:'#0f1729', rail:'#7d8496'}},
+  terracotta:{name:'Terracotta', bg:'#f6efe3', pat:'none', patC:'', route:'#e0472a', rw:4.4, accent:'#e0472a', text:'#3a2a20', muted:'#806a5a', elev:'#3a2a20', elevOp:0.1, rule:'#e6d9c6', ink:true, detail:'detailed',
+    map:{water:'#468397', park:'#c4cfb0', building:'#ece2d2', minor:'#a8927e', road:'#c66f45', motorway:'#b25530', rail:'#9b8b7c'}},
   harbour:   {name:'Harbour',   bg:'#f6f4ef', pat:'none', patC:'', route:'#d24a37', rw:4.4, accent:'#d24a37', text:'#1c2333', muted:'#676b75', elev:'#1c2333', elevOp:.1, rule:'#dedbd3', ink:true, detail:'detailed',
     map:{water:'#1c2333', park:'#e5e9de', building:'#e8e5de', minor:'#3b3e46', road:'#141619', motorway:'#0d0f12', rail:'#8b8d92'}},
+  copper:    {name:'Copper',    bg:'#f9f8f6', pat:'none', patC:'', route:'#d64a3c', rw:4.4, accent:'#8a2b12', text:'#2b1a13', muted:'#79685f', elev:'#2b1a13', elevOp:.1, rule:'#e6e1dc', ink:true, detail:'detailed',
+    map:{water:'#e6e2df', park:'#f0eeea', building:'#ece9e5', minor:'#5c5c5c', road:'#8a2b12', motorway:'#8a2b12', rail:'#a3a3a3'}},
+  sepia:     {name:'Sepia',     bg:'#f2e7d7', pat:'none', patC:'', route:'#3b6e7b', rw:4.4, accent:'#3b6e7b', text:'#3d2b21', muted:'#735f4f', elev:'#3d2b21', elevOp:.11, rule:'#e0d1bb', ink:true, detail:'detailed',
+    map:{water:'#d5c5a9', park:'#e7dbc5', building:'#e8dbc7', minor:'#6e5648', road:'#3e2c22', motorway:'#33241b', rail:'#8f7d6b'}},
+  graphite:  {name:'Graphite', bg:'#2b2a2f', pat:'none', patC:'', route:'#ff6a2c', rw:4.4, accent:'#ff6a2c', text:'#f2f1ee', muted:'#a3a2a8', elev:'#f2f1ee', elevOp:0.15, rule:'#3d3c42', ink:true, detail:'detailed',
+    map:{water:'#1d1c21', park:'#302f34', building:'#323136', minor:'#8e8d95', road:'#e2e1e6', motorway:'#f4f3f7', rail:'#6a6970'}},
+  volt:      {name:'Volt', bg:'#15161c', pat:'none', patC:'', route:'#5df08a', rw:4.4, accent:'#5df08a', text:'#eef0f2', muted:'#8f919c', elev:'#eef0f2', elevOp:0.15, rule:'#2a2b33', ink:true, detail:'detailed',
+    map:{water:'#0b0c11', park:'#1a1d22', building:'#1b1c22', minor:'#5b5c68', road:'#a9a9b5', motorway:'#c6c6d1', rail:'#4a4b56'}},
+  alpine:    {name:'Alpine', bg:'#f1f2ec', pat:'none', patC:'', route:'#d7262b', rw:4.4, accent:'#d7262b', text:'#1a2a22', muted:'#5f6e66', elev:'#1a2a22', elevOp:0.1, rule:'#d9ddd2', ink:true, detail:'detailed',
+    map:{water:'#4f86b8', park:'#a3c193', building:'#e3e5dc', minor:'#6b7d72', road:'#20382c', motorway:'#142a1f', rail:'#8c9a90'}},
+  riso:      {name:'Riso', bg:'#f5eee2', pat:'none', patC:'', route:'#e8457c', rw:4.4, accent:'#e8457c', text:'#213a8f', muted:'#5163a6', elev:'#213a8f', elevOp:0.1, rule:'#e3d8c8', ink:true, detail:'detailed',
+    map:{water:'#f3b4c3', park:'#cbd5ee', building:'#ece3d6', minor:'#8095d1', road:'#2c4fa8', motorway:'#22409a', rail:'#a7b3da'}},
+  // Earlier map-first themes
+  trail:     {name:'Trail',     bg:'#e5e9d9', pat:'contours', patC:'#c9cfb5', route:'#c4461b', rw:3.6, accent:'#2f3b26', text:'#2b3522', muted:'#68725d', elev:'#2f3b26', elevOp:.13, rule:'#c2c9ad',
+    map:{water:'#b4d0d3', park:'#cad9ad', building:'#dbe0cc', minor:'#d2d7c0', road:'#c4caaf', motorway:'#cdb48c', rail:'#bfc5aa'}},
+  tangerine: {name:'Tangerine', bg:'#f7efe4', pat:'none', patC:'', route:'#e2522a', rw:3.4, accent:'#1f6f8b', text:'#2a1e17', muted:'#7a6658', elev:'#2a1e17', elevOp:.1, rule:'#e3d5c3',
+    map:{water:'#9fd0de', park:'#cfe0a8', building:'#efe1cf', minor:'#ffffff', road:'#ffffff', motorway:'#f6c46a', rail:'#d9c8b4', casing:'#cbae89'}},
+  blueprint: {name:'Blueprint', bg:'#173556', pat:'grid',     patC:'#24496f', route:'#ffffff', rw:3,   accent:'#ffcf5c', text:'#eef3f9', muted:'#9cb2cb', elev:'#ffffff', elevOp:.15, rule:'#2f5884',
+    map:{water:'#112846', park:'#1b3e5c', building:'#1d3c5f', minor:'#294c73', road:'#3a618e', motorway:'#5079a9', rail:'#3a618e'}},
+  lagoon:    {name:'Lagoon',    bg:'#0f3b3d', pat:'none', patC:'', route:'#ffb000', rw:3.4, accent:'#ffb000', text:'#f3ead7', muted:'#9ebab3', elev:'#f3ead7', elevOp:.14, rule:'#23585a',
+    map:{water:'#1c6c7b', park:'#1b5143', building:'#134649', minor:'#285e5d', road:'#8f9c7c', motorway:'#d8c58f', rail:'#285e5d'}},
+  neon:      {name:'Neon',      bg:'#140f26', pat:'none', patC:'', route:'#2ef2d0', glow:true, rw:3.2, accent:'#ff4fa3', text:'#f5f0ff', muted:'#9b90c4', elev:'#f5f0ff', elevOp:.14, rule:'#2b2350',
+    map:{water:'#1b2552', park:'#172d2b', building:'#1c1737', minor:'#33265f', road:'#56399d', motorway:'#ff4fa3', rail:'#33265f'}},
 };
 
 export const BG_PRESETS = [

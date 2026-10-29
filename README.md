@@ -56,8 +56,10 @@ docs/DEPLOY.md          Step-by-step: put the site online
   Detailed 4. The map is drawn k× larger (zoom + log2 k) and shrunk back by 1/k, with line widths corrected
   in `map/style.js`, so lines look identical but the map pulls 1–2 zoom levels more street data. The print
   server must use the same k: render at (1000·k) px wide with pixel ratio / k.
-- "Ink" themes (`ink:true`: Ink, Noir, Copper, Sepia, Harbour) recreate classic high-contrast city prints: their
-  own map colours skip the contrast cap, Balanced uses full colour, and picking one switches the map to Detailed.
+- Designed "ink" themes (`ink:true`: Midnight, Ink, Noir, Regatta, Terracotta, Harbour, Copper, Sepia, Graphite,
+  Volt, Alpine, Riso) are the house standard: bold, purposeful contrast. Their own map colours skip the contrast
+  cap, Balanced uses full colour, roads follow a hierarchy (heavy motorways, fine side streets), and picking one
+  switches the map to Detailed. The route keeps a background-coloured outline so it reads over any layer.
   Customer colour overrides on these themes are still guarded.
 
 ### Self-hosting the map data (before launch)
