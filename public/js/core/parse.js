@@ -1,5 +1,6 @@
 // Activity file parsing: GPX, TCX (XML) and Garmin FIT (binary).
-// Returns {pts:[{lat,lon,ele,t}], name, sport}. Throws Error('format') for unreadable files.
+// Returns {pts:[{lat,lon,ele,t}], name, sport, athlete}. Throws Error('format') for unreadable files.
+// athlete = the person's name when the file carries one (GPX metadata author, FIT user profile); often absent.
 // Uses the browser's DOMParser; on the server pass one in (e.g. from @xmldom/xmldom).
 
 const tagAll = (el,n) => el.getElementsByTagNameNS('*',n);
@@ -24,7 +25,9 @@ export function parseGPX(text, Parser = globalThis.DOMParser){
   }
   const trk = tagAll(doc,'trk')[0];
   const name = (trk && firstText(trk,'name')) || firstText(doc,'name');
-  return {pts,name,sport:trk?sportFrom(firstText(trk,'type')):null};
+  const meta = tagAll(doc,'metadata')[0], author = meta && tagAll(meta,'author')[0];
+  const athlete = author ? firstText(author,'name') : null;
+  return {pts,name,sport:trk?sportFrom(firstText(trk,'type')):null,athlete};
 }
 
 export function parseTCX(text, Parser = globalThis.DOMParser){
@@ -44,9 +47,9 @@ export function parseFIT(buf){
   const dv = new DataView(buf), len = buf.byteLength;
   const hs = dv.getUint8(0), size = dv.getUint32(4,true);
   let pos = hs; const end = Math.min(hs+size,len);
-  const defs = {}, pts = []; let lastTs = null, sport = null;
+  const defs = {}, pts = []; let lastTs = null, athlete = null; const sports = [];
   const SEMI = 180/2147483648, FIT_EPOCH = 631065600;
-  const SPORTMAP = {1:'run',2:'ride',5:'swim',11:'hike',17:'hike',18:'tri'};
+  const SPORTMAP = {1:'run',2:'ride',5:'swim',11:'hike',17:'hike',18:'tri'}; // 3 = transition (ignored)
   function readRec(def){
     const r = {};
     for(const f of def.fields){
@@ -60,6 +63,8 @@ export function parseFIT(buf){
         case 5: if(f.size===4) v = dv.getInt32(pos,def.le); break;
         case 6: case 12: if(f.size===4) v = dv.getUint32(pos,def.le); break;
         case 8: if(f.size===4) v = dv.getFloat32(pos,def.le); break;
+        case 7: { let s = ''; for(let i=0;i<f.size;i++){ const c = dv.getUint8(pos+i); if(!c) break; s += String.fromCharCode(c); }
+          try{ v = decodeURIComponent(escape(s)); }catch(e){ v = s; } break; } // UTF-8 string
       }
       r[f.num] = v; pos += f.size;
     }
@@ -74,7 +79,8 @@ export function parseFIT(buf){
       else if(r[2]!=null && r[2]!==0xffff) ele = r[2]/5-500;
       const ts = r[253]!=null && r[253]!==0xffffffff ? (r[253]+FIT_EPOCH)*1000 : null;
       pts.push({lat:la*SEMI,lon:lo*SEMI,ele,t:ts});
-    } else if(g===18 && r[5]!=null && !sport){ sport = SPORTMAP[r[5]] || null; }
+    } else if(g===18 && r[5]!=null){ sports.push(r[5]); } // one session per leg in multisport files
+    else if(g===3 && typeof r[0]==='string' && r[0].trim()){ athlete = r[0].trim(); } // user profile: friendly name
   }
   while(pos<end){
     const h = dv.getUint8(pos++);
@@ -99,7 +105,10 @@ export function parseFIT(buf){
       handle(def.g,r);
     }
   }
-  return {pts,name:null,sport};
+  // Several different sports (e.g. swim, bike, run) = a multisport race; we label it a triathlon.
+  const distinct = [...new Set(sports.filter(x=>SPORTMAP[x]))];
+  const sport = distinct.length > 1 ? 'tri' : (distinct.length ? SPORTMAP[distinct[0]] : null);
+  return {pts,name:null,sport,athlete};
 }
 
 // Detects the format from the bytes and parses it.

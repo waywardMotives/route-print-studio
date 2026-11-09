@@ -1,5 +1,5 @@
 // Configurator UI: holds the customer's choices, redraws the poster and keeps the map in sync.
-import { THEMES, BG_PRESETS, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS, MAP_LAYERS, ORIENTS, SQUARE_ONLY_LAYOUTS } from './core/config.js';
+import { THEMES, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS, MAP_LAYERS, ORIENTS, SQUARE_ONLY_LAYOUTS } from './core/config.js';
 import { C } from './core/color.js';
 import { parseActivity } from './core/parse.js';
 import { buildTrack, sampleTrack, fmtDur, fmtKm, esc } from './core/geo.js';
@@ -7,14 +7,16 @@ import { renderPoster } from './core/poster.js';
 import { buildMapStyle } from './map/style.js';
 import { MapPreview } from './map/preview.js';
 import { exportPrintFile } from './export/printfile.js';
+import { placeFor } from './map/geocode.js';
 
 const $ = id => document.getElementById(id);
 
 // Customer choices. `track` holds the prepared route.
 const S = {
-  theme:'midnight', layout:'classic', orient:'portrait', size:'50x70', format:'framed', frame:'black',
+  theme:'midnight', layout:'classic', orient:'portrait', size:'50x70', format:'framed', frame:'black', border:'white',
   sport:'run', title:'', name:'', place:'', date:'', time:'', showElev:true,
-  headFont:'montserrat', detailFont:'plex', lineW:1, bg:null, accent:null,
+  headFont:'montserrat', detailFont:'plex', lineW:1, accent:null, units:'metric',
+  accentOn:{route:true, unit:true, elev:true},
   showName:true, showPlace:true, showDate:true, showGain:true,
   map:true, mapDetail:'streets', mapStrength:'balanced', mapColors:{},
 };
@@ -45,13 +47,35 @@ function useTrack(res, fname){
   else if(st.dur && st.distKm){ const kmh = st.distKm/(st.dur/3600); S.sport = kmh>22 ? 'ride' : kmh<6.5 ? 'hike' : 'run'; }
   $('i-title').value = S.title; $('i-date').value = S.date; $('i-time').value = S.time; $('i-sport').value = S.sport;
   $('i-elev').disabled = !t.profile;
+  if(fname) autofill(res, t);
+}
+// Pre-fills athlete name and location for an uploaded file, without touching anything the customer typed:
+// only fields that are empty or still show the sample values are filled.
+const SAMPLE = {name:'Laura Berg', place:'Riverside'};
+function autofill(res, t){
+  const free = k => !S[k] || S[k] === SAMPLE[k];
+  if(free('name')){ S.name = res.athlete || ''; $('i-name').value = S.name; }
+  if(free('place')){
+    S.place = ''; $('i-place').value = '';
+    const p0 = t.pts[0], forTrack = t;
+    placeFor(p0.lat, p0.lon).then(place => {
+      if(!place || track !== forTrack || S.place) return; // customer typed something or uploaded another file
+      S.place = place; $('i-place').value = place; draw();
+    });
+  }
 }
 function setStatus(html){ $('status').innerHTML = html; }
+// Summary of the uploaded file, in the chosen units.
+function refreshStatus(){
+  if(!fileName || !track) return;
+  const d = S.units==='imperial' ? fmtKm(track.stats.distKm*.621371)+' mi' : fmtKm(track.stats.distKm)+' km';
+  setStatus(`<span>${esc(fileName)} · ${track.pts.length.toLocaleString('en-GB')} points · ${d}${track.profile?'':' · no elevation data'}</span><button type="button" class="linkbtn" id="useSample">Back to sample</button>`);
+}
 async function loadFile(file){
   try{
     const res = parseActivity(await file.arrayBuffer());
     useTrack(res, file.name);
-    setStatus(`<span>${esc(file.name)} · ${track.pts.length.toLocaleString('en-GB')} points · ${fmtKm(track.stats.distKm)} km${track.profile?'':' · no elevation data'}</span><button type="button" class="linkbtn" id="useSample">Back to sample</button>`);
+    refreshStatus();
     draw();
   }catch(e){
     const msg = e.message==='nopoints'
@@ -62,7 +86,7 @@ async function loadFile(file){
 }
 function loadSample(){
   useTrack({pts:sampleTrack(), name:'Riverside City Marathon', sport:'run'}, '');
-  S.name = 'Laura Berg'; S.place = 'Riverside';
+  S.name = SAMPLE.name; S.place = SAMPLE.place;
   $('i-name').value = S.name; $('i-place').value = S.place;
   setStatus('<span>Showing a sample marathon route. Upload your own file to replace it.</span>');
 }
@@ -83,7 +107,7 @@ function buildUI(){
       (M.casing?`<path d="M0 30H60M22 0V80M0 12L60 44" stroke="${M.casing}" stroke-width="3.4"/>`:'')+`<path d="M0 30H60M22 0V80" stroke="${M.road}" stroke-width="2"/><path d="M0 12L60 44" stroke="${M.motorway}" stroke-width="2"/>` : pat;
     return `<button type="button" class="sw" data-v="${id}"><svg viewBox="0 0 60 80" aria-hidden="true"><rect width="60" height="80" fill="${T.bg}"/>${mapArt}<path d="M14 52C10 38 22 30 28 22S44 14 46 28 38 44 44 52 30 62 14 52Z" fill="none" stroke="${T.route}" stroke-width="2.4" stroke-linejoin="round"/><rect x="10" y="66" width="26" height="4" fill="${T.text}"/><rect x="10" y="72" width="16" height="2" fill="${T.muted}"/><circle cx="14" cy="52" r="2.6" fill="${T.accent}"/></svg>${T.name}</button>`;
   }).join('');
-  $('themes').onclick = e => { const b = e.target.closest('button'); if(!b) return; S.theme = b.dataset.v; S.bg = null; S.accent = null; S.mapColors = {}; if(THEMES[S.theme].detail) S.mapDetail = THEMES[S.theme].detail; draw(); };
+  $('themes').onclick = e => { const b = e.target.closest('button'); if(!b) return; S.theme = b.dataset.v; S.accent = null; S.mapColors = {}; if(THEMES[S.theme].detail) S.mapDetail = THEMES[S.theme].detail; draw(); };
 
   const colorRow = (el,list,key,inputId) => {
     el.innerHTML = `<button type="button" class="chip chip-theme" data-v=""><svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Theme</button>` +
@@ -92,7 +116,6 @@ function buildUI(){
     el.addEventListener('click',e=>{ const b = e.target.closest('button'); if(!b) return; S[key] = b.dataset.v || null; draw(); });
     $(inputId).addEventListener('input',e=>{ S[key] = e.target.value; draw(); });
   };
-  colorRow($('bgs'),BG_PRESETS,'bg','c-bg');
   colorRow($('accents'),ACCENT_PRESETS,'accent','c-accent');
 
   chipGroup($('mapOn'),[{id:'on',name:'Street map'},{id:'off',name:'Plain'}],'mapOnId',null,v=>{ S.map = v==='on'; });
@@ -100,6 +123,9 @@ function buildUI(){
     `<button type="button" class="linkbtn" id="mlReset" hidden>Reset to theme colours</button>`;
   $('mapLayers').addEventListener('input',e=>{ const k = e.target.dataset && e.target.dataset.layer; if(!k) return; S.mapColors = {...S.mapColors, [k]: e.target.value}; draw(); });
   $('mlReset').addEventListener('click',()=>{ S.mapColors = {}; draw(); });
+  // Accent targets: which elements use the accent colour.
+  document.querySelectorAll('[data-accent]').forEach(cb=>cb.addEventListener('change',()=>{ S.accentOn = {...S.accentOn, [cb.dataset.accent]: cb.checked}; draw(); }));
+  chipGroup($('units'),[{id:'metric',name:'Kilometres'},{id:'imperial',name:'Miles'}],'units',null,()=>refreshStatus());
   chipGroup($('mapDetail'),MAP_DETAILS,'mapDetail');
   chipGroup($('mapStrength'),MAP_STRENGTHS,'mapStrength');
   chipGroup($('layouts'),LAYOUTS,'layout',null,v=>{
@@ -110,6 +136,7 @@ function buildUI(){
   chipGroup($('sizes'),SIZES,'size',it=>it.name+(it.w===it.h||/^a/.test(it.id)?'':' cm'));
   chipGroup($('formats'),FORMATS,'format');
   chipGroup($('frames'),FRAMES.map(f=>({...f,dot:f.c})),'frame');
+  chipGroup($('borders'),[{id:'white',name:'White border'},{id:'none',name:'Edge to edge'}],'border');
   chipGroup($('headFonts'),HEAD_FONTS,'headFont',it=>`<span style='font-family:${it.f};font-weight:${it.bold}'>${it.name}</span>`,loadFonts);
   chipGroup($('detailFonts'),DETAIL_FONTS,'detailFont',it=>`<span style='font-family:${it.stat};font-weight:${it.wv}'>${it.name}</span>`,loadFonts);
 
@@ -136,7 +163,7 @@ function buildUI(){
     t.addEventListener('click',()=>showTab(t));
     t.addEventListener('keydown',e=>{ const d = e.key==='ArrowRight' ? 1 : e.key==='ArrowLeft' ? -1 : 0; if(d){ e.preventDefault(); showTab(tabs[(i+d+tabs.length)%tabs.length], true); } });
   });
-  document.querySelectorAll('.btn-next').forEach(b=>b.addEventListener('click',()=>{ showTab($(b.dataset.next)); document.querySelector('.tabs').scrollIntoView({block:'nearest'}); }));
+  document.querySelectorAll('.btn-next[data-next]').forEach(b=>b.addEventListener('click',()=>{ showTab($(b.dataset.next)); document.querySelector('.tabs').scrollIntoView({block:'nearest'}); }));
   try{ const saved = localStorage.getItem('rps-tab'); if(saved && $(saved)) showTab($(saved)); }catch(e){}
   $('file').addEventListener('change',e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); e.target.value=''; });
   const drop = $('drop');
@@ -183,14 +210,20 @@ function draw(){
   if(!S.map) mapView.hide();
   $('credit').hidden = !mapShown;
   $('mapOpts').hidden = !S.map;
-  $('bgLabel').textContent = S.map ? 'Background colour (tints the map)' : 'Background colour';
+  // Without the map only the Background colour applies.
+  $('colorsLabel').textContent = S.map ? 'Map colours' : 'Background colour';
+  document.querySelectorAll('#mapLayers .layer-sw').forEach(el=>{ el.hidden = !S.map && el.querySelector('input').dataset.layer!=='land'; });
+  $('unitLabel').textContent = S.units==='imperial' ? 'Miles' : 'Km';
 
   const fr = $('frame');
   fr.className = 'frame ' + S.format;
   const F = FRAMES.find(f=>f.id===S.frame);
   fr.style.setProperty('--fc',F.c);
-  const pad = S.format==='framed' ? .032+.065*(1-.064) : 0;
-  fr.style.setProperty('--ar', (1/((1-2*pad)*p.H/p.W + 2*pad)).toFixed(4));
+  // Paper proportions; the white border is printed, so the mat shows it at true scale (padding % = share of width).
+  const pad = S.format==='framed' ? .032 : 0;
+  fr.style.setProperty('--ar', (1/((1-2*pad)*p.ch/p.cw + 2*pad)).toFixed(4));
+  fr.style.setProperty('--bd', (p.border/p.cw*100).toFixed(3)+'%');
+  $('borderWrap').hidden = S.format==='canvas';
   $('frameWrap').hidden = S.format!=='framed';
   const sqOnly = SQUARE_ONLY_LAYOUTS.includes(S.layout);
   document.querySelectorAll('#orients .chip').forEach(b=>{ b.disabled = sqOnly && b.dataset.v!=='square'; });
@@ -198,14 +231,15 @@ function draw(){
   document.querySelectorAll('#sizes .chip').forEach(b=>{ b.hidden = isSquare(b.dataset.v) !== (S.orient==='square'); });
   const px = c => Math.round(c/2.54*300).toLocaleString('en-GB');
   const fmt = FORMATS.find(f=>f.id===S.format).name + (S.format==='framed' ? ` (${F.name.toLowerCase()})` : '');
-  $('specs').innerHTML = `<span>${p.cw} × ${p.ch} cm</span><span>${fmt}</span><span>Print file ${px(p.cw)} × ${px(p.ch)} px at 300 dpi</span>`;
+  const bd = p.border ? `White border ${p.border.toLocaleString('en-GB')} cm` : (S.format==='canvas' ? '' : 'Edge to edge');
+  $('specs').innerHTML = `<span>${p.cw} × ${p.ch} cm</span><span>${fmt}</span>${bd?`<span>${bd}</span>`:''}<span>Print file ${px(p.cw+.8)} × ${px(p.ch+.8)} px at 300 dpi (incl. 4 mm bleed)</span>`;
 
   const mark = (sel,v) => document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
   mark('#themes .sw',S.theme); layoutThemes(); mark('#layouts .chip',S.layout); mark('#orients .chip',S.orient);
   mark('#headFonts .chip',S.headFont); mark('#detailFonts .chip',S.detailFont);
   mark('#mapOn .chip',S.map?'on':'off'); mark('#mapDetail .chip',S.mapDetail); mark('#mapStrength .chip',S.mapStrength);
-  mark('#sizes .chip',S.size); mark('#formats .chip',S.format); mark('#frames .chip',S.frame);
-  for(const [row,key,list,hint] of [['bgs','bg',BG_PRESETS,'bgHint'],['accents','accent',ACCENT_PRESETS,'accentHint']]){
+  mark('#sizes .chip',S.size); mark('#formats .chip',S.format); mark('#frames .chip',S.frame); mark('#borders .chip',S.border); mark('#units .chip',S.units);
+  for(const [row,key,list,hint] of [['accents','accent',ACCENT_PRESETS,'accentHint']]){
     const v = S[key] || '';
     document.querySelectorAll(`#${row} button`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
     const custom = document.querySelector(`#${row} .custom`), isCustom = !!v && !list.some(c=>c.hex===v);
@@ -219,7 +253,8 @@ function draw(){
     if(document.activeElement !== inp) inp.value = c;
   }
   $('mlReset').hidden = !Object.keys(S.mapColors).length;
-  $('mapHint').textContent = p.T.notes.map || ''; $('mapHint').hidden = !p.T.notes.map;
+  const mh = [p.T.notes.bg, p.T.notes.map].filter(Boolean).join(' ');
+  $('mapHint').textContent = mh; $('mapHint').hidden = !mh;
   // Dim accent swatches that would nearly vanish on the current background (still clickable; they get corrected).
   document.querySelectorAll('#accents .dot-sw[data-v]').forEach(b=>{
     const weak = C.contrast(b.dataset.v,p.T.bg) < 2;

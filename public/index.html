@@ -50,6 +50,8 @@
           <label class="f">Finish time<input id="i-time" placeholder="h:mm:ss" inputmode="numeric" maxlength="9"></label>
           <label class="f full">Sport<select id="i-sport"></select></label>
         </div>
+        <div class="sub">Units</div>
+        <div class="chips" id="units"></div>
         <div class="sub">Show on print</div>
         <div class="checks">
           <label class="toggle"><input type="checkbox" id="s-name" checked> Athlete name</label>
@@ -81,16 +83,18 @@
           <div class="chips" id="mapDetail"></div>
           <div class="sub">Map strength</div>
           <div class="chips" id="mapStrength"></div>
-          <div class="sub">Map colours</div>
-          <div class="layers" id="mapLayers"></div>
-          <p class="hint" id="mapHint" hidden></p>
         </div>
-        <div class="sub" id="bgLabel">Background colour</div>
-        <div class="dots" id="bgs"></div>
-        <p class="hint" id="bgHint" hidden></p>
+        <div class="sub" id="colorsLabel">Map colours</div>
+        <div class="layers" id="mapLayers"></div>
+        <p class="hint" id="mapHint" hidden></p>
         <div class="sub">Accent colour</div>
         <div class="dots" id="accents"></div>
         <p class="hint" id="accentHint" hidden></p>
+        <div class="checks checks-3 accent-on" role="group" aria-label="Use the accent colour for">
+          <label class="toggle"><input type="checkbox" data-accent="route" checked> Route</label>
+          <label class="toggle"><input type="checkbox" data-accent="unit" checked> <span id="unitLabel">Km</span></label>
+          <label class="toggle"><input type="checkbox" data-accent="elev" checked> Elevation</label>
+        </div>
         <div class="sub">Route line weight</div>
         <div class="range"><input type="range" id="i-line" min="50" max="250" step="10" value="100" aria-label="Route line weight"><output id="o-line" for="i-line">100%</output></div>
         <div class="sub">Heading font</div>
@@ -106,11 +110,12 @@
         <div class="sub">Format</div>
         <div class="chips" id="formats"></div>
         <div id="frameWrap"><div class="sub">Frame</div><div class="chips" id="frames"></div></div>
+        <div id="borderWrap"><div class="sub">Border</div><div class="chips" id="borders"></div></div>
         <!-- Internal tool, shown only with ?print in the address: saves the 300 dpi print file. -->
         <div class="export" id="exportWrap" hidden>
           <div class="sub">Print file (internal)</div>
           <button type="button" class="btn-next" id="exportBtn">Download print file</button>
-          <p class="hint" id="exportStatus" aria-live="polite">300 dpi JPEG at the selected size. Use desktop Chrome.</p>
+          <p class="hint" id="exportStatus" aria-live="polite">300 dpi JPEG at the selected size, with the 4 mm bleed Gelato expects. Use desktop Chrome.</p>
         </div>
       </section>
     </div>

@@ -11,6 +11,9 @@
 import { deg, latFromMercY } from '../core/geo.js';
 
 const DPI = 300;
+// Gelato's print area adds 4 mm bleed on every side (a 30×40 cm product expects 30.8×40.8 cm), trimmed off or
+// hidden under the frame. The file includes it so it prints at a true 300 dpi with nothing important cut.
+export const BLEED_CM = .4;
 const cmToPx = cm => Math.round(cm / 2.54 * DPI);
 
 // Map centre for a point given in poster units (x, y), using the poster's projection.
@@ -32,11 +35,13 @@ const idle = (map, ms=90000) => new Promise((ok, fail) => {
   map.once('idle', () => { clearTimeout(t); ok(); });
 });
 
-// Draws the map onto ctx (tw × th px). p = renderPoster() result, style = buildMapStyle().
-async function drawMap(ctx, p, style, tw, th, progress){
+// Draws the map onto ctx for the artwork area tw × th px, extended by e poster units on every side (bleed).
+// p = renderPoster() result, style = buildMapStyle().
+async function drawMap(ctx, p, style, tw, th, progress, e = 0){
   const k = (style.metadata && style.metadata.renderScale) || 1;
-  const cssW = p.W * k, cssH = p.H * k;          // map size in CSS px, as in the preview
-  const pr = tw / cssW;                          // pixel ratio that reaches print resolution
+  const cssW = (p.W + 2*e) * k, cssH = (p.H + 2*e) * k; // map size in CSS px, as in the preview
+  const pr = tw / (p.W * k);                     // pixel ratio that reaches print resolution
+  const u = tw / p.W, dw = cssW / k * u, dh = cssH / k * u, dx = -e * u; // destination of the whole map
   const lim = maxTilePx();
   const cols = Math.ceil(cssW * pr / lim), rows = Math.ceil(cssH * pr / lim);
   const zoom = Math.log2(p.view.sc * 2 * Math.PI / 512) + Math.log2(k);
@@ -52,7 +57,7 @@ async function drawMap(ctx, p, style, tw, th, progress){
     for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++){
       const x0 = xs[c], x1 = xs[c+1], y0 = ys[r], y1 = ys[r+1];
       host.style.width = (x1-x0)+'px'; host.style.height = (y1-y0)+'px';
-      const center = lngLatAt(p.view, (x0+x1)/2/k, (y0+y1)/2/k);
+      const center = lngLatAt(p.view, (x0+x1)/2/k - e, (y0+y1)/2/k - e);
       progress(`Drawing the map ${++i} of ${cols*rows}…`);
       if(!map){
         map = new window.maplibregl.Map({ container: host, style, center, zoom, pixelRatio: pr,
@@ -61,7 +66,7 @@ async function drawMap(ctx, p, style, tw, th, progress){
       } else { map.resize(); map.jumpTo({center, zoom}); }
       await idle(map);
       const cv = map.getCanvas();
-      ctx.drawImage(cv, 0, 0, cv.width, cv.height, x0/cssW*tw, y0/cssH*th, (x1-x0)/cssW*tw, (y1-y0)/cssH*th);
+      ctx.drawImage(cv, 0, 0, cv.width, cv.height, dx + x0/cssW*dw, dx + y0/cssH*dh, (x1-x0)/cssW*dw, (y1-y0)/cssH*dh);
     }
   } finally { if(map) map.remove(); host.remove(); }
 }
@@ -101,20 +106,27 @@ async function drawDesign(ctx, svg, tw, th){
   } finally { URL.revokeObjectURL(url); }
 }
 
-// Main entry. Returns {blob, name, tw, th}.
+// Main entry. Returns {blob, name, tw, th}. The file is the full paper size; with a white border the
+// artwork is drawn inside it on plain white paper.
 export async function exportPrintFile({p, style, mapOn, name, progress = () => {}}){
-  const tw = cmToPx(p.cw), th = cmToPx(p.ch);
+  const tw = cmToPx(p.cw + 2*BLEED_CM), th = cmToPx(p.ch + 2*BLEED_CM); // paper + bleed
+  const bl = cmToPx(BLEED_CM), b = cmToPx(p.border || 0);
+  const aw = cmToPx(p.aw), ah = cmToPx(p.ah);           // artwork
   const canvas = document.createElement('canvas');
   canvas.width = tw; canvas.height = th;
   const ctx = canvas.getContext('2d');
   if(!ctx) throw new Error('This browser can’t create a canvas this large. Try desktop Chrome.');
-  ctx.fillStyle = p.T.bg; ctx.fillRect(0, 0, tw, th);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, tw, th); // white border and its bleed = unprinted paper
+  ctx.translate(bl + b, bl + b);
+  // Edge to edge: the artwork's background and map run out into the bleed; the text stays where it was.
+  const ext = b ? 0 : bl;
+  ctx.fillStyle = p.T.bg; ctx.fillRect(-ext, -ext, aw + 2*ext, ah + 2*ext);
   if(mapOn && p.view){
     if(!window.maplibregl) throw new Error('The map engine didn’t load.');
-    await drawMap(ctx, p, style, tw, th, progress);
+    await drawMap(ctx, p, style, aw, ah, progress, ext / (aw / p.W));
   }
   progress('Adding text and route…');
-  await drawDesign(ctx, p.svg, tw, th);
+  await drawDesign(ctx, p.svg, aw, ah);
   progress('Saving the file…');
   const blob = await new Promise(ok => canvas.toBlob(ok, 'image/jpeg', .95));
   canvas.width = canvas.height = 0; // free memory

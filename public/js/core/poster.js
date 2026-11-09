@@ -10,11 +10,17 @@ import { SIZES, HEAD_FONTS, DETAIL_FONTS, MAP_SOURCE } from './config.js';
 import { resolveTheme } from './theme.js';
 import { rdp, fmtDur, parseTime, fmtKm, fmtDate, esc } from './geo.js';
 
+// cw × ch = paper size (cm). With a white border, the artwork is laid out inside it (aw × ah), so the
+// design keeps its margins and proportions; canvas wraps have no border.
+export const BORDER = .05; // white border width as a share of the paper's short side
+export function hasBorder(S){ return S.border !== 'none' && S.format !== 'canvas'; }
 export function posterSize(S){
   const sz = SIZES.find(z=>z.id===S.size); let cw = sz.w, ch = sz.h;
   if(S.orient==='landscape' && cw!==ch) [cw,ch] = [ch,cw];
-  const W = 1000, H = Math.round(W*ch/cw);
-  return {W,H,cw,ch};
+  const border = hasBorder(S) ? +(Math.min(cw,ch)*BORDER).toFixed(2) : 0;
+  const aw = cw - 2*border, ah = ch - 2*border;
+  const W = 1000, H = Math.round(W*ah/aw);
+  return {W,H,cw,ch,aw,ah,border};
 }
 
 const LH = 1.22; // Figma "auto" line height
@@ -24,7 +30,7 @@ export function renderPoster(S, track, measure){
   const df = DETAIL_FONTS.find(x=>x.id===S.detailFont) || DETAIL_FONTS[0];
   const FD = hf.f, WH = hf.heavy, WB = hf.bold, HS = hf.scale || 1;
   const FB = df.label, FM = df.stat, WL = df.wl, WV = df.wv;
-  const {W,H,cw,ch} = posterSize(S);
+  const {W,H,cw,ch,aw,ah,border} = posterSize(S);
   const f = Math.min(W,H)/500, k = f/2, T = resolveTheme(S), mapOn = !!S.map;
   let view = null;
   const under = [], over = [];
@@ -95,18 +101,22 @@ export function renderPoster(S, track, measure){
   }});
 
   // ---------- stats ----------
+  // Units: metric (default) or imperial (miles, feet, yards for short swims).
+  const imp = S.units==='imperial', MI = .621371, FT = 3.28084;
+  const eleU = imp ? 'ft' : 'm', ele = m => Math.round(imp ? m*FT : m);
   function statList(){
     const st = track.stats, km = st.distKm, sec = parseTime(S.time), o = [];
-    if(S.sport==='swim' && km<10) o.push({k:'Distance',v:Math.round(km*1000).toLocaleString('en-GB'),u:'m'});
-    else o.push({k:'Distance',v:fmtKm(km),u:'km'});
+    const dist = imp ? km*MI : km, du = imp ? 'mi' : 'km';
+    if(S.sport==='swim' && km<10) o.push({k:'Distance',v:Math.round(imp ? km*1093.61 : km*1000).toLocaleString('en-GB'),u:imp?'yd':'m'});
+    else o.push({k:'Distance',v:fmtKm(dist),u:du});
     if(S.time) o.push({k:'Time',v:S.time,u:''});
     if(sec && km>0){
-      if(S.sport==='run') o.push({k:'Pace',v:fmtDur(sec/km),u:'/km'});
-      else if(S.sport==='ride') o.push({k:'Speed',v:(km/(sec/3600)).toFixed(1),u:'km/h'});
-      else if(S.sport==='swim') o.push({k:'Pace',v:fmtDur(sec/(km*10)),u:'/100m'});
+      if(S.sport==='run') o.push({k:'Pace',v:fmtDur(sec/dist),u:'/'+du});
+      else if(S.sport==='ride') o.push({k:'Speed',v:(dist/(sec/3600)).toFixed(1),u:imp?'mph':'km/h'});
+      else if(S.sport==='swim') o.push({k:'Pace',v:fmtDur(imp ? sec/(km*10.9361) : sec/(km*10)),u:imp?'/100yd':'/100m'});
     }
-    if(S.showGain && st.gain!=null && S.sport!=='swim') o.push({k:'Elevation',v:'+'+Math.round(st.gain),u:'m'});
-    if(S.sport==='hike' && st.maxEle!=null) o.push({k:'Highest',v:String(Math.round(st.maxEle)),u:'m'});
+    if(S.showGain && st.gain!=null && S.sport!=='swim') o.push({k:'Elevation',v:'+'+ele(st.gain),u:eleU});
+    if(S.sport==='hike' && st.maxEle!=null) o.push({k:'Highest',v:String(ele(st.maxEle)),u:eleU});
     return o.slice(0,4);
   }
   const stats = statList();
@@ -154,7 +164,7 @@ export function renderPoster(S, track, measure){
       while(n > 20*k && wd() > width){ n *= .97; u *= .97; }
       const h = n*.85;
       return { h, w:wd(), draw(x,y){
-        over.push(`<text x="${x.toFixed(1)}" y="${(y+h/2+n*.36).toFixed(1)}" font-family='${FD}' font-size="${n.toFixed(1)}" font-weight="${WH}" fill="${T.text}" style="letter-spacing:-.01em"${halo(n*.5)}>${esc(d.v)}<tspan font-size="${u.toFixed(1)}" font-weight="${WB}" fill="${T.accent}" dx="${(8*f).toFixed(1)}">${esc(d.u.toUpperCase())}</tspan></text>`);
+        over.push(`<text x="${x.toFixed(1)}" y="${(y+h/2+n*.36).toFixed(1)}" font-family='${FD}' font-size="${n.toFixed(1)}" font-weight="${WH}" fill="${T.text}" style="letter-spacing:-.01em"${halo(n*.5)}>${esc(d.v)}<tspan font-size="${u.toFixed(1)}" font-weight="${WB}" fill="${T.unitC}" dx="${(8*f).toFixed(1)}">${esc(d.u.toUpperCase())}</tspan></text>`);
       }};
     }};
   }
@@ -162,7 +172,7 @@ export function renderPoster(S, track, measure){
   function elevation(chartH, gap=4.5){
     if(!(S.showElev && track.profile)) return null;
     const pr = track.profile, mn = Math.min(...pr.e), mx = Math.max(...pr.e);
-    const label = text(`Elevation · ${Math.round(mn)}–${Math.round(mx)} m`, {size:5.5, font:FM, weight:400, ls:12, color:T.muted});
+    const label = text(`Elevation · ${ele(mn)}–${ele(mx)} ${eleU}`, {size:5.5, font:FM, weight:400, ls:12, color:T.muted});
     return { measure(width){
       const lm = label.measure(width);
       return { h: lm.h + gap*f + chartH*f, w:width, draw(x,y,wd){ lm.draw(x,y,wd); elevChart({x, y:y+lm.h+gap*f, w:wd, h:chartH*f}); } };
@@ -201,8 +211,8 @@ export function renderPoster(S, track, measure){
     s += `<path d="${dd}" fill="none" stroke="${T.route}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`;
     const a = p[0], b = p[p.length-1], r = 7*k;
     if(Math.hypot(a[0]-b[0],a[1]-b[1]) > 16*k)
-      s += `<circle cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="${r}" fill="${T.bg}" stroke="${T.accent}" stroke-width="${3*k}"/>`;
-    s += `<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="${r}" fill="${T.accent}" stroke="${T.bg}" stroke-width="${2.5*k}"/>`;
+      s += `<circle cx="${b[0].toFixed(1)}" cy="${b[1].toFixed(1)}" r="${r}" fill="${T.bg}" stroke="${T.mark}" stroke-width="${3*k}"/>`;
+    s += `<circle cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="${r}" fill="${T.mark}" stroke="${T.bg}" stroke-width="${2.5*k}"/>`;
     return s;
   }
   function elevChart(box){
@@ -226,11 +236,12 @@ export function renderPoster(S, track, measure){
     // Classic / Portrait
     place(vstack([
       vstack([title(32, WH, 1, .94, 2), subtitle(9.5)], 11),
-      rule(), flexRoute(), elevation(52), statsRow(stats, 22, 9.2),
+      rule(), flexRoute(), statsRow(stats, 22, 9.2), elevation(52),
     ], 22), m, m, W-2*m, H-2*m);
   }
   else if(S.layout==='classic'){
     // Classic / Landscape: title + subtitle, then [stats column | route], elevation along the bottom
+    // (stats sit above the elevation in both orientations)
     const row = { flex(x,y,w,h){
       const col = statsColumn(stats, 19, 8);
       if(col){ col.measure(105*f).draw(x, y, 105*f); }
@@ -244,8 +255,7 @@ export function renderPoster(S, track, measure){
   }
   else if(S.layout==='foundation'){
     // Foundation: map-led top area and an information band anchored to the bottom edge.
-    // The band has generous room above the title and fades into the map with a gradient
-    // (solid behind the text, transparent at its top edge). No rule line.
+    // The band is solid with a crisp top edge (no gradient, no rule line) and generous room above the title.
     const titleGroup = (ts, ss) => vstack([title(ts, WH, 1, 1, 1), subtitle(ss)], 6);
     let content, padTop;
     if(land){
@@ -263,10 +273,7 @@ export function renderPoster(S, track, measure){
     }
     const cm = content.measure(W-2*m);
     const contentTop = H - 18*f - cm.h, bandTop = contentTop - padTop*f;
-    const solidFrom = contentTop - 6*f;
-    over.push(`<defs><linearGradient id="bandfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.bg}" stop-opacity="0"/><stop offset=".55" stop-color="${T.bg}" stop-opacity=".82"/><stop offset="1" stop-color="${T.bg}" stop-opacity="1"/></linearGradient></defs>`+
-      `<rect x="0" y="${bandTop.toFixed(1)}" width="${W}" height="${(solidFrom-bandTop).toFixed(1)}" fill="url(#bandfade)"/>`+
-      `<rect x="0" y="${(solidFrom-.5).toFixed(1)}" width="${W}" height="${(H-solidFrom+.5).toFixed(1)}" fill="${T.bg}"/>`);
+    over.push(`<rect x="0" y="${bandTop.toFixed(1)}" width="${W}" height="${(H-bandTop).toFixed(1)}" fill="${T.bg}"/>`);
     if(land) under.push(routeSvg({x:m, y:27*f, w:W-2*m, h:bandTop-27*f}));
     else under.push(routeSvg({x:m, y:m, w:W-2*m, h:bandTop-m}));
     cm.draw(m, contentTop, W-2*m);
@@ -318,7 +325,7 @@ export function renderPoster(S, track, measure){
   }
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" style="white-space:pre" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc('Print preview: '+(S.title||'route'))}">${background()}${under.join('')}${over.join('')}</svg>`;
-  return {svg,W,H,cw,ch,T,view};
+  return {svg,W,H,cw,ch,aw,ah,border,T,view};
 }
 
 const contourCache = {};

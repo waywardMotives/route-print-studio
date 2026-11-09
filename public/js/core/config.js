@@ -43,10 +43,6 @@ export const THEMES = {
     map:{water:'#1b2552', park:'#172d2b', building:'#1c1737', minor:'#33265f', road:'#56399d', motorway:'#ff4fa3', rail:'#33265f'}},
 };
 
-export const BG_PRESETS = [
-  {name:'Ink',hex:'#0e131d'},{name:'Charcoal',hex:'#1f2124'},{name:'Forest',hex:'#1c2a21'},{name:'Navy',hex:'#173556'},{name:'Burgundy',hex:'#3b1a22'},
-  {name:'Paper',hex:'#f4f4f0'},{name:'Sand',hex:'#ece4d6'},{name:'Sage',hex:'#e5e9d9'},{name:'Mist',hex:'#dce7ec'},{name:'Blush',hex:'#f3e3df'}];
-
 export const ACCENT_PRESETS = [
   {name:'Signal red',hex:'#d6402f'},{name:'Ember',hex:'#e76f51'},{name:'Saffron',hex:'#f2b134'},{name:'Moss',hex:'#4f7a3a'},{name:'Teal',hex:'#1f8a8a'},
   {name:'Cobalt',hex:'#2f5fd0'},{name:'Violet',hex:'#6b4fbf'},{name:'Rose',hex:'#d4577b'},{name:'Ink',hex:'#15171c'},{name:'Chalk',hex:'#f4efe6'}];
@@ -101,4 +97,5 @@ export const MAP_DETAILS = [{id:'minimal',name:'Minimal',k:1},{id:'streets',name
 // v = tint strength for themes without a palette; p = how far palette colours are applied (1 = full colour).
 export const MAP_STRENGTHS = [{id:'subtle',name:'Subtle',v:.6,p:.5},{id:'balanced',name:'Balanced',v:1,p:.8},{id:'bold',name:'Bold',v:1.5,p:1}];
 // Map layers customers can recolour.
-export const MAP_LAYERS = [{id:'water',name:'Water'},{id:'park',name:'Parks'},{id:'road',name:'Roads'},{id:'building',name:'Buildings'}];
+// land = the poster background (also used without the map, where it is the only colour shown).
+export const MAP_LAYERS = [{id:'land',name:'Background'},{id:'water',name:'Water'},{id:'park',name:'Parks'},{id:'road',name:'Roads'},{id:'building',name:'Buildings'}];

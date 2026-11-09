@@ -25,6 +25,7 @@ js/core/geo.js          Distance, elevation, line simplification, map projection
 js/core/poster.js       Draws the poster as SVG (no browser APIs, so the print server can reuse it)
 js/map/style.js         Generates the map style from the poster colours
 js/map/preview.js       The live map behind the preview, aligned exactly to the route
+js/map/geocode.js       Suggests the Location from the route's start point (OpenStreetMap Nominatim)
 js/export/printfile.js  300 dpi print file export (internal, ?print)
 docs/DEPLOY.md          Step-by-step: put the site online
 ```
@@ -70,11 +71,21 @@ OpenFreeMap's public servers are donation-funded with no uptime guarantee. Befor
 2. Upload it to Cloudflare R2 and serve it with the Protomaps Cloudflare Worker.
 3. Change `MAP_SOURCE.url` in `public/js/core/config.js`. The schema stays the same, so no style changes are needed.
 
+## Autofill from the uploaded file
+
+- From the file: event name (GPX/TCX track name, else the file name), date and finish time, sport (FIT
+  multisport → Triathlon), athlete name when present (GPX `metadata/author/name`, FIT user profile; most
+  Strava/Garmin exports don't include it).
+- Location: the route's start point is reverse geocoded with OpenStreetMap Nominatim ("Tallinn, Estonia").
+  Nominatim allows ~1 request/second and light use; before heavy traffic, point `NOMINATIM` in
+  `js/map/geocode.js` at a hosted provider (LocationIQ/Geoapify use the same format).
+- Fields the customer has typed are never overwritten.
+
 ## Print files (internal)
 
 Open the site with `?print` at the end of the address (e.g. `https://…workers.dev/?print`). The Print tab then
 shows **Download print file**: it renders the current design at 300 dpi for the selected size and saves a JPEG
-(50×70 cm = 5,906 × 8,268 px). Use desktop Chrome; very large sizes exceed Safari's canvas limits.
+(50×70 cm + 4 mm bleed on every side = 6,000 × 8,362 px, the print area Gelato expects). Use desktop Chrome; very large sizes exceed Safari's canvas limits.
 
 How it works (`js/export/printfile.js`): a hidden map renders the same style at print resolution in tiles that are
 stitched together, then the poster SVG is drawn on top with its Google Fonts embedded. The print server will
