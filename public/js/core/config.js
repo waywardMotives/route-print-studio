@@ -31,10 +31,6 @@ export const THEMES = {
   riso:      {name:'Riso', bg:'#f5eee2', pat:'none', patC:'', route:'#e8457c', rw:4.4, accent:'#e8457c', text:'#213a8f', muted:'#5163a6', elev:'#213a8f', elevOp:0.1, rule:'#e3d8c8', ink:true, detail:'detailed',
     map:{water:'#f3b4c3', park:'#cbd5ee', building:'#ece3d6', minor:'#8095d1', road:'#2c4fa8', motorway:'#22409a', rail:'#a7b3da'}},
   // Earlier map-first themes
-  trail:     {name:'Trail',     bg:'#e5e9d9', pat:'contours', patC:'#c9cfb5', route:'#c4461b', rw:3.6, accent:'#2f3b26', text:'#2b3522', muted:'#68725d', elev:'#2f3b26', elevOp:.13, rule:'#c2c9ad',
-    map:{water:'#b4d0d3', park:'#cad9ad', building:'#dbe0cc', minor:'#d2d7c0', road:'#c4caaf', motorway:'#cdb48c', rail:'#bfc5aa'}},
-  tangerine: {name:'Tangerine', bg:'#f7efe4', pat:'none', patC:'', route:'#e2522a', rw:3.4, accent:'#1f6f8b', text:'#2a1e17', muted:'#7a6658', elev:'#2a1e17', elevOp:.1, rule:'#e3d5c3',
-    map:{water:'#9fd0de', park:'#cfe0a8', building:'#efe1cf', minor:'#ffffff', road:'#ffffff', motorway:'#f6c46a', rail:'#d9c8b4', casing:'#cbae89'}},
   blueprint: {name:'Blueprint', bg:'#173556', pat:'grid',     patC:'#24496f', route:'#ffffff', rw:3,   accent:'#ffcf5c', text:'#eef3f9', muted:'#9cb2cb', elev:'#ffffff', elevOp:.15, rule:'#2f5884',
     map:{water:'#112846', park:'#1b3e5c', building:'#1d3c5f', minor:'#294c73', road:'#3a618e', motorway:'#5079a9', rail:'#3a618e'}},
   lagoon:    {name:'Lagoon',    bg:'#0f3b3d', pat:'none', patC:'', route:'#ffb000', rw:3.4, accent:'#ffb000', text:'#f3ead7', muted:'#9ebab3', elev:'#f3ead7', elevOp:.14, rule:'#23585a',
