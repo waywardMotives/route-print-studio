@@ -11,12 +11,12 @@ import { resolveTheme } from './theme.js';
 import { rdp, fmtDur, parseTime, fmtKm, fmtDate, esc } from './geo.js';
 
 // cw × ch = paper size (cm). With a white border, the artwork is laid out inside it (aw × ah), so the
-// design keeps its margins and proportions; canvas wraps have no border.
+// design keeps its margins and proportions.
 export const BORDER = .05; // white border width as a share of the paper's short side
-export function hasBorder(S){ return S.border !== 'none' && S.format !== 'canvas'; }
+export function hasBorder(S){ return S.border !== 'none'; }
 export function posterSize(S){
   const sz = SIZES.find(z=>z.id===S.size); let cw = sz.w, ch = sz.h;
-  if(S.orient==='landscape' && cw!==ch) [cw,ch] = [ch,cw];
+  if(S.orient==='landscape') [cw,ch] = [ch,cw];
   const border = hasBorder(S) ? +(Math.min(cw,ch)*BORDER).toFixed(2) : 0;
   const aw = cw - 2*border, ah = ch - 2*border;
   const W = 1000, H = Math.round(W*ah/aw);
@@ -71,7 +71,7 @@ export function renderPoster(S, track, measure){
   }
   const title = (size, weight, ls, lh, lines, min) => text(S.title, {size:size*HS, min:(min||size*.55)*HS, font:FD, weight, ls, lh, lines, color:T.text});
   const subtitleStr = [S.showName&&S.name, S.showPlace&&S.place, S.showDate&&fmtDate(S.date)].filter(Boolean).join('  ·  ');
-  const subtitle = (size, lines=1, align) => text(subtitleStr, {size, min:size*.75, font:FB, weight:WL, ls:16, lines, color:T.muted, align});
+  const subtitle = (size, lines=1) => text(subtitleStr, {size, min:size*.75, font:FB, weight:WL, ls:16, lines, color:T.muted});
 
   // ---------- generic blocks ----------
   const fixed = (h, draw) => ({ measure(){ return {h, w:0, draw: draw || (()=>{})}; } });
@@ -151,9 +151,9 @@ export function renderPoster(S, track, measure){
     }};
   }
   // One line of key figures, e.g. "42.15 KM · 3:23:49 · 4:50 /KM".
-  function statsLine(n, size, align){
+  function statsLine(n, size){
     const s = stats.slice(0,n).map(x=>x.v+(x.u?' '+x.u:'')).join('  ·  ');
-    return text(s, {size, min:size*.7, font:FM, weight:WV, ls:6, color:T.muted, align});
+    return text(s, {size, min:size*.7, font:FM, weight:WV, ls:6, color:T.muted});
   }
   // The big distance figure with its unit in the accent colour (Statement).
   function distanceRow(nsz, usz){
@@ -230,7 +230,7 @@ export function renderPoster(S, track, measure){
 
   // ---------- layouts (Figma: "Layout components") ----------
   const land = W > H*1.05;
-  const m = (S.layout==='tile' ? 42.5 : 37.5)*f;
+  const m = 37.5*f;
 
   if(S.layout==='classic' && !land){
     // Classic / Portrait
@@ -299,7 +299,7 @@ export function renderPoster(S, track, measure){
     top.draw(x0, m, colW);
     bottom.draw(x0, H-m-bottom.h, colW);
   }
-  else if(S.layout==='minimal'){
+  else {
     // Minimal: route, then subtitle and a row of [title | key figures]
     const line = statsLine(3, 7.5);
     const t = title(20, WB, 4, LH, 2, 13);
@@ -309,13 +309,6 @@ export function renderPoster(S, track, measure){
       return { h:Math.max(tm.h, lm.h), w:width, draw(x,y,wd){ tm.draw(x,y,wd-lm.w-14*f); lm.draw(x+wd-lm.w, y, lm.w); } };
     }};
     place(vstack([flexRoute(), vstack([subtitle(6.5), bottomRow], 5)], 20), m, m, W-2*m, H-2*m);
-  }
-  else {
-    // Gallery tile: route, then centred subtitle, title and key figures
-    place(vstack([
-      flexRoute(),
-      vstack([subtitle(6.5, 1, 'center'), text(S.title, {size:25*HS, min:13*HS, font:FD, weight:WH, ls:3, lines:1, color:T.text, align:'center'}), statsLine(3, 7.5, 'center')], 6),
-    ], 16), m, m, W-2*m, H-2*m);
   }
 
   // Licence requirement: OpenStreetMap credit on every print that shows the map.

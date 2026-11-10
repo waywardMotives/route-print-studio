@@ -1,5 +1,5 @@
 // Configurator UI: holds the customer's choices, redraws the poster and keeps the map in sync.
-import { THEMES, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS, MAP_LAYERS, ORIENTS, SQUARE_ONLY_LAYOUTS } from './core/config.js';
+import { THEMES, ACCENT_PRESETS, HEAD_FONTS, DETAIL_FONTS, LAYOUTS, SIZES, FORMATS, FRAMES, SPORTS, MAP_DETAILS, MAP_STRENGTHS, MAP_LAYERS, ORIENTS } from './core/config.js';
 import { C } from './core/color.js';
 import { parseActivity } from './core/parse.js';
 import { buildTrack, sampleTrack, fmtDur, fmtKm, esc } from './core/geo.js';
@@ -128,12 +128,9 @@ function buildUI(){
   chipGroup($('units'),[{id:'metric',name:'Kilometres'},{id:'imperial',name:'Miles'}],'units',null,()=>refreshStatus());
   chipGroup($('mapDetail'),MAP_DETAILS,'mapDetail');
   chipGroup($('mapStrength'),MAP_STRENGTHS,'mapStrength');
-  chipGroup($('layouts'),LAYOUTS,'layout',null,v=>{
-    if(SQUARE_ONLY_LAYOUTS.includes(v)){ if(S.orient!=='square'){ S.orient='square'; if(!isSquare(S.size)) S.size='20x20'; } }
-    else if(S.size==='20x20') S.size='30x30'; // 20×20 is a tile size; full posters start at 30×30
-  });
+  chipGroup($('layouts'),LAYOUTS,'layout');
   chipGroup($('orients'),ORIENTS,'orient');
-  chipGroup($('sizes'),SIZES,'size',it=>it.name+(it.w===it.h||/^a/.test(it.id)?'':' cm'));
+  chipGroup($('sizes'),SIZES,'size',it=>it.name+(/^a/.test(it.id)?'':' cm'));
   chipGroup($('formats'),FORMATS,'format');
   chipGroup($('frames'),FRAMES.map(f=>({...f,dot:f.c})),'frame');
   chipGroup($('borders'),[{id:'white',name:'White border'},{id:'none',name:'Edge to edge'}],'border');
@@ -186,16 +183,16 @@ function layoutThemes(){
 
 // ---------- render ----------
 let mapView = null, svgHost = null;
-const isSquare = id => { const z = SIZES.find(z=>z.id===id); return !!z && z.w===z.h; };
-// Keeps layout, orientation and size consistent. Each orientation family remembers its last size,
-// so switching Square -> Portrait -> Square brings the customer's earlier size back.
-const lastSize = {square:'30x30', rect:'50x70'};
+// Product options must be ones we still sell. A saved or URL-supplied design that names a removed option
+// (e.g. Canvas, a square size, Square or Gallery tile, or a retired theme) falls back to the default.
+const DEFAULTS = {theme:'midnight', layout:'classic', orient:'portrait', size:'50x70', format:'framed', frame:'black', border:'white'};
+const OPTIONS = {theme:Object.keys(THEMES), layout:LAYOUTS, orient:ORIENTS, size:SIZES, format:FORMATS, frame:FRAMES,
+  border:[{id:'white'},{id:'none'}]};
 function normalize(){
-  if(SQUARE_ONLY_LAYOUTS.includes(S.layout)) S.orient = 'square';
-  if(!ORIENTS.some(o=>o.id===S.orient)) S.orient = 'portrait';
-  const fam = S.orient==='square' ? 'square' : 'rect';
-  if(isSquare(S.size) !== (fam==='square')) S.size = lastSize[fam];
-  lastSize[fam] = S.size;
+  for(const [k, list] of Object.entries(OPTIONS)){
+    const ids = list.map(o => typeof o === 'string' ? o : o.id);
+    if(!ids.includes(S[k])) S[k] = DEFAULTS[k];
+  }
 }
 
 function draw(){
@@ -223,15 +220,10 @@ function draw(){
   const pad = S.format==='framed' ? .032 : 0;
   fr.style.setProperty('--ar', (1/((1-2*pad)*p.ch/p.cw + 2*pad)).toFixed(4));
   fr.style.setProperty('--bd', (p.border/p.cw*100).toFixed(3)+'%');
-  $('borderWrap').hidden = S.format==='canvas';
   $('frameWrap').hidden = S.format!=='framed';
-  const sqOnly = SQUARE_ONLY_LAYOUTS.includes(S.layout);
-  document.querySelectorAll('#orients .chip').forEach(b=>{ b.disabled = sqOnly && b.dataset.v!=='square'; });
-  $('orientHint').hidden = !sqOnly;
-  document.querySelectorAll('#sizes .chip').forEach(b=>{ b.hidden = isSquare(b.dataset.v) !== (S.orient==='square'); });
   const px = c => Math.round(c/2.54*300).toLocaleString('en-GB');
   const fmt = FORMATS.find(f=>f.id===S.format).name + (S.format==='framed' ? ` (${F.name.toLowerCase()})` : '');
-  const bd = p.border ? `White border ${p.border.toLocaleString('en-GB')} cm` : (S.format==='canvas' ? '' : 'Edge to edge');
+  const bd = p.border ? `White border ${p.border.toLocaleString('en-GB')} cm` : 'Edge to edge';
   $('specs').innerHTML = `<span>${p.cw} × ${p.ch} cm</span><span>${fmt}</span>${bd?`<span>${bd}</span>`:''}<span>Print file ${px(p.cw+.8)} × ${px(p.ch+.8)} px at 300 dpi (incl. 4 mm bleed)</span>`;
 
   const mark = (sel,v) => document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
