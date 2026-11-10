@@ -67,7 +67,7 @@ export const DETAIL_FONTS = [
 export const LAYOUTS = [{id:'classic',name:'Classic'},{id:'foundation',name:'Foundation'},{id:'statement',name:'Statement'},{id:'minimal',name:'Minimal'}];
 
 export const SIZES = [
-  {id:'a4',name:'A4',w:21,h:29.7},{id:'30x40',name:'30×40',w:30,h:40},{id:'a3',name:'A3',w:29.7,h:42},
+  {id:'30x40',name:'30×40',w:30,h:40},{id:'a3',name:'A3',w:29.7,h:42},{id:'40x50',name:'40×50',w:40,h:50},
   {id:'50x70',name:'50×70',w:50,h:70},{id:'70x100',name:'70×100',w:70,h:100}];
 
 export const ORIENTS = [{id:'portrait',name:'Portrait'},{id:'landscape',name:'Landscape'}];
