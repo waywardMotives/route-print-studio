@@ -17,6 +17,12 @@ repository, publishes the `public/` folder, and redeploys automatically every ti
 3. Click **Deploy**. When it finishes you get a link like `route-print-studio.<your-subdomain>.workers.dev`.
    Open it: you should see the sample marathon on a street map.
 
+## Saved designs (KV)
+
+`wrangler.jsonc` binds the KV namespace `route-print-studio-designs` as `DESIGNS`; saved designs live there.
+It was created once in the Cloudflare account (Storage & Databases → KV). If the project ever moves to another
+Cloudflare account, create a namespace there and put its ID in `wrangler.jsonc`.
+
 ## Re-running a failed deploy
 
 Worker → **Deployments** (or **Builds**) → open the failed build → **Retry build**. Pushing any new commit

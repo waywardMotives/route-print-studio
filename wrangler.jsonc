@@ -1,8 +1,16 @@
 {
-  // Cloudflare Workers config: serves the static site in ./public (no server code).
+  // Cloudflare Workers config: serves the static site in ./public, plus a small API in src/worker.js
+  // (saving designs, visitor country) that only runs for /api/* requests.
   "name": "route-print-studio",
+  "main": "src/worker.js",
   "compatibility_date": "2026-10-13",
   "assets": {
-    "directory": "./public"
-  }
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  // Saved designs (settings + route), one entry per design. Namespace "route-print-studio-designs".
+  "kv_namespaces": [
+    { "binding": "DESIGNS", "id": "fd624a0e8e924ffeaba9fc32fce77823" }
+  ]
 }

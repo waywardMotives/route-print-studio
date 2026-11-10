@@ -91,3 +91,34 @@ export const MAP_STRENGTHS = [{id:'subtle',name:'Subtle',v:.6,p:.5},{id:'balance
 // Map layers customers can recolour.
 // land = the poster background (also used without the map, where it is the only colour shown).
 export const MAP_LAYERS = [{id:'land',name:'Background'},{id:'water',name:'Water'},{id:'park',name:'Parks'},{id:'road',name:'Roads'},{id:'building',name:'Buildings'}];
+
+// ---------- Shop ----------
+// Where orders are placed, and what a print costs. Shopify is the source of truth: the prices and variant
+// IDs below must match the two products there ("Custom Route Print, Framed" and "..., Poster").
+// Change a price in Shopify -> change it here too.
+export const SHOP = {
+  domain: 'fswa4e-bc.myshopify.com', // swap for the store's own domain once it has one
+  currency: 'EUR',
+  freeShippingFrom: 50,              // order value (EUR) from which delivery is free
+  shippingFee: 7.45,                 // delivery charge below that
+};
+// Countries we deliver to. Germany has its own, lower prices (Gelato's cost there is far lower); every
+// other country pays the "eu" tier.
+export const EU_COUNTRIES = ['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK'];
+export const PRICES = {
+  de: { poster: {a4:35, '30x40':42, '40x50':45, '50x70':55, '70x100':79},
+        framed: {a4:65, '30x40':79, '40x50':109, '50x70':139, '70x100':209} },
+  eu: { poster: {a4:37, '30x40':45, '40x50':49, '50x70':59, '70x100':85},
+        framed: {a4:69, '30x40':89, '40x50':125, '50x70':159, '70x100':239} },
+};
+// Shopify variant IDs. Poster: one per size. Framed: one per size and frame colour.
+export const VARIANTS = {
+  poster: {a4:'55896396366153', '30x40':'55896396398921', '40x50':'55896396431689', '50x70':'55896396464457', '70x100':'55896396497225'},
+  framed: {
+    a4:       {black:'55896395710793', white:'55896395743561', oak:'55896395776329'},
+    '30x40':  {black:'55896395809097', white:'55896395841865', oak:'55896395874633'},
+    '40x50':  {black:'55896395907401', white:'55896395940169', oak:'55896395972937'},
+    '50x70':  {black:'55896396005705', white:'55896396038473', oak:'55896396071241'},
+    '70x100': {black:'55896396104009', white:'55896396136777', oak:'55896396169545'},
+  },
+};

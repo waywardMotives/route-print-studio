@@ -8,6 +8,7 @@ import { buildMapStyle } from './map/style.js';
 import { MapPreview } from './map/preview.js';
 import { exportPrintFile } from './export/printfile.js';
 import { placeFor } from './map/geocode.js';
+import { priceFor, saveDesign, fetchDesign, cartUrl, unpackPoints } from './shop/cart.js';
 
 const $ = id => document.getElementById(id);
 
@@ -21,6 +22,18 @@ const S = {
   map:true, mapDetail:'streets', mapStrength:'balanced', mapColors:{},
 };
 let track = null, fileName = '';
+// The customer's own route points, as they are saved with an order (null while the sample route is shown).
+let rawPts = null;
+// Visitor's country (ISO code) for the price tier; null until /api/context answers, or if it can't tell.
+let country = null;
+
+// A saved design has to reopen exactly as the customer saw it. So uploaded points are rounded once, on
+// upload, to the precision we store (about 1 cm, 0.1 m of elevation, 1 ms): the preview and the saved copy
+// are then built from the very same numbers.
+const roundPoints = pts => pts.filter(p => isFinite(p.lat) && isFinite(p.lon)).map(p => ({
+  lat: +p.lat.toFixed(7), lon: +p.lon.toFixed(7),
+  ele: p.ele == null || !isFinite(p.ele) ? null : +p.ele.toFixed(1),
+  t: p.t == null || !isFinite(p.t) ? null : Math.round(p.t) }));
 
 // ---------- text measuring (browser) ----------
 const meas = document.createElement('canvas').getContext('2d');
@@ -65,6 +78,8 @@ function autofill(res, t){
   }
 }
 function setStatus(html){ $('status').innerHTML = html; }
+// Message under the Add to cart button ('' hides it).
+function buyNote(msg){ $('buyStatus').textContent = msg; $('buyStatus').hidden = !msg; }
 // Summary of the uploaded file, in the chosen units.
 function refreshStatus(){
   if(!fileName || !track) return;
@@ -74,8 +89,10 @@ function refreshStatus(){
 async function loadFile(file){
   try{
     const res = parseActivity(await file.arrayBuffer());
+    res.pts = roundPoints(res.pts);
     useTrack(res, file.name);
-    refreshStatus();
+    rawPts = res.pts;
+    refreshStatus(); buyNote('');
     draw();
   }catch(e){
     const msg = e.message==='nopoints'
@@ -86,9 +103,64 @@ async function loadFile(file){
 }
 function loadSample(){
   useTrack({pts:sampleTrack(), name:'Riverside City Marathon', sport:'run'}, '');
+  rawPts = null;
   S.name = SAMPLE.name; S.place = SAMPLE.place;
   $('i-name').value = S.name; $('i-place').value = S.place;
   setStatus('<span>Showing a sample marathon route. Upload your own file to replace it.</span>');
+}
+
+// ---------- saved designs ----------
+// Copies a saved design's settings into S, accepting only values the configurator itself could have produced.
+// (A design link can come from anywhere, so nothing in it is trusted: unknown options fall back to the
+// defaults, colours must be plain hex, text is cut to the field lengths.)
+const HEX = /^#[0-9a-f]{6}$/i;
+const TEXT_MAX = {title:60, name:40, place:40, date:10, time:9};
+function restoreState(saved){
+  const ids = list => list.map(o => o.id);
+  const pick = (k, allowed) => { S[k] = allowed.includes(saved[k]) ? saved[k] : (DEFAULTS[k] ?? S[k]); };
+  for(const [k, max] of Object.entries(TEXT_MAX)) S[k] = typeof saved[k] === 'string' ? saved[k].slice(0, max) : '';
+  for(const k of ['showElev','showName','showPlace','showDate','showGain','map']) if(typeof saved[k] === 'boolean') S[k] = saved[k];
+  pick('theme', Object.keys(THEMES)); pick('layout', ids(LAYOUTS)); pick('orient', ids(ORIENTS)); pick('size', ids(SIZES));
+  pick('format', ids(FORMATS)); pick('frame', ids(FRAMES)); pick('border', ['white','none']); pick('sport', ids(SPORTS));
+  pick('headFont', ids(HEAD_FONTS)); pick('detailFont', ids(DETAIL_FONTS)); pick('units', ['metric','imperial']);
+  pick('mapDetail', ids(MAP_DETAILS)); pick('mapStrength', ids(MAP_STRENGTHS));
+  S.lineW = typeof saved.lineW === 'number' && isFinite(saved.lineW) ? Math.min(2.5, Math.max(.5, saved.lineW)) : 1;
+  S.accent = typeof saved.accent === 'string' && HEX.test(saved.accent) ? saved.accent : null;
+  S.accentOn = {route:true, unit:true, elev:true};
+  if(saved.accentOn && typeof saved.accentOn === 'object')
+    for(const k of Object.keys(S.accentOn)) if(typeof saved.accentOn[k] === 'boolean') S.accentOn[k] = saved.accentOn[k];
+  S.mapColors = {};
+  if(saved.mapColors && typeof saved.mapColors === 'object')
+    for(const l of MAP_LAYERS){ const c = saved.mapColors[l.id]; if(typeof c === 'string' && HEX.test(c)) S.mapColors[l.id] = c; }
+}
+// Makes the form controls show what S holds (the chips and swatches are handled by draw()).
+const SHOW_TOGGLES = [['s-name','showName','i-name'],['s-place','showPlace','i-place'],['s-date','showDate','i-date'],['s-gain','showGain',null]];
+function syncInputs(){
+  $('i-title').value = S.title; $('i-name').value = S.name; $('i-place').value = S.place;
+  $('i-date').value = S.date; $('i-time').value = S.time; $('i-sport').value = S.sport;
+  $('i-elev').checked = S.showElev; $('i-elev').disabled = !(track && track.profile);
+  for(const [id, key, input] of SHOW_TOGGLES){ $(id).checked = S[key]; if(input) $(input).disabled = !S[key]; }
+  const lw = Math.round(S.lineW*100); $('i-line').value = lw; $('o-line').textContent = lw+'%';
+  document.querySelectorAll('[data-accent]').forEach(cb => { cb.checked = !!S.accentOn[cb.dataset.accent]; });
+}
+// Opens a design saved earlier (the address ends in ?design=<id>): same route, same settings.
+async function openDesign(id){
+  setStatus('<span>Opening your design…</span>');
+  try{
+    const d = await fetchDesign(id);
+    const num = v => typeof v === 'number' && isFinite(v);
+    const pts = unpackPoints(Array.isArray(d.pts) ? d.pts.filter(Array.isArray) : [])
+      .filter(p => num(p.lat) && num(p.lon))
+      .map(p => ({lat:p.lat, lon:p.lon, ele: num(p.ele) ? p.ele : null, t: num(p.t) ? p.t : null}));
+    const t = buildTrack(pts);
+    if(!t) throw new Error('That design has no route we can draw.');
+    track = t; rawPts = pts;
+    fileName = typeof d.file === 'string' && d.file ? d.file.slice(0, 200) : 'Saved design';
+    restoreState(d.s && typeof d.s === 'object' ? d.s : {});
+    syncInputs(); refreshStatus(); loadFonts(); draw();
+  }catch(e){
+    setStatus(`<span class="err" role="alert">${esc(e.message || 'We couldn’t open that design.')}</span><span>Showing the sample route instead.</span>`);
+  }
 }
 
 // ---------- UI ----------
@@ -141,7 +213,7 @@ function buildUI(){
   const bind = (id,key,ev='input') => $(id).addEventListener(ev,e=>{ S[key] = e.target.value; draw(); });
   bind('i-title','title'); bind('i-name','name'); bind('i-place','place'); bind('i-date','date'); bind('i-time','time'); bind('i-sport','sport','change');
   $('i-elev').addEventListener('change',e=>{ S.showElev = e.target.checked; draw(); });
-  for(const [id,key,input] of [['s-name','showName','i-name'],['s-place','showPlace','i-place'],['s-date','showDate','i-date'],['s-gain','showGain',null]])
+  for(const [id,key,input] of SHOW_TOGGLES)
     $(id).addEventListener('change',e=>{ S[key] = e.target.checked; if(input) $(input).disabled = !e.target.checked; draw(); });
   $('i-line').addEventListener('input',e=>{ S.lineW = e.target.value/100; $('o-line').textContent = e.target.value+'%'; draw(); });
 
@@ -168,6 +240,20 @@ function buildUI(){
   ['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
   drop.addEventListener('drop',e=>{ const f = e.dataTransfer.files[0]; if(f) loadFile(f); });
   $('status').addEventListener('click',e=>{ if(e.target.id==='useSample'){ loadSample(); draw(); } });
+
+  // Add to cart: save the design, then hand over to the shop's cart with the design attached.
+  $('addToCart').addEventListener('click', async () => {
+    if(!rawPts){ buyNote('This is still the sample route. Upload your own race file in step 1 to order it.'); return; }
+    const btn = $('addToCart');
+    btn.disabled = true; buyNote('Saving your design…');
+    try{
+      const id = await saveDesign({S, pts: rawPts, file: fileName});
+      buyNote('Taking you to the cart…');
+      location.assign(cartUrl(S, id));
+    }catch(e){ buyNote(e.message || 'We couldn’t save your design. Please try again.'); btn.disabled = false; }
+  });
+  // Coming back from the cart with the browser's Back button: make the button usable again.
+  window.addEventListener('pageshow', () => { $('addToCart').disabled = false; buyNote(''); });
 }
 
 // Shows one row of theme cards when collapsed. The selected theme always stays visible.
@@ -226,6 +312,9 @@ function draw(){
   const bd = p.border ? `White border ${p.border.toLocaleString('en-GB')} cm` : 'Edge to edge';
   $('specs').innerHTML = `<span>${p.cw} × ${p.ch} cm</span><span>${fmt}</span>${bd?`<span>${bd}</span>`:''}<span>Print file ${px(p.cw+.8)} × ${px(p.ch+.8)} px at 300 dpi (incl. 4 mm bleed)</span>`;
 
+  const price = priceFor(S, country);
+  $('priceMain').textContent = price.label; $('priceDelivery').textContent = price.delivery; $('priceWhere').textContent = price.where;
+
   const mark = (sel,v) => document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
   mark('#themes .sw',S.theme); layoutThemes(); mark('#layouts .chip',S.layout); mark('#orients .chip',S.orient);
   mark('#headFonts .chip',S.headFont); mark('#detailFonts .chip',S.detailFont);
@@ -279,7 +368,11 @@ const posterEl = $('poster');
 svgHost = document.createElement('div'); svgHost.className = 'svg-layer'; posterEl.appendChild(svgHost);
 mapView = new MapPreview(posterEl);
 buildUI(); loadSample(); draw(); loadFonts();
+const designId = new URLSearchParams(location.search).get('design');
+if(designId) openDesign(designId);
+fetch('/api/context').then(r => r.ok ? r.json() : {}).then(d => { if(typeof d.country === 'string'){ country = d.country; draw(); } }).catch(() => {});
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 
 // Exposed for debugging and automated checks.
-window.__studio = { S, get track(){ return track; }, draw, get map(){ return mapView.map; } };
+window.__studio = { S, get track(){ return track; }, get rawPts(){ return rawPts; }, get country(){ return country; },
+  set country(c){ country = c; draw(); }, draw, get map(){ return mapView.map; } };

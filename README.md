@@ -101,3 +101,29 @@ python3 -m http.server 8000
 ```
 
 Then open http://localhost:8000.
+
+## Ordering: saved designs and the Shopify cart
+
+Pressing **Add to cart** (Print tab) does two things:
+
+1. **Saves the design.** The settings and the route points are sent to `POST /api/designs`, which stores them
+   (gzip-compressed) in the Cloudflare KV namespace `route-print-studio-designs` and returns a 12-character ID.
+2. **Hands over to Shopify.** The browser goes to `https://<shop>/cart/add` with the matching product variant
+   and these details on the cart line: Design (the event name), Orientation, Border, plus two for us:
+   `_Design ID` and `_Print file` (a link that reopens the design with the print-file tool).
+
+**Fulfilling an order:** open the order in the Shopify admin, click the `_Print file` link on the line item,
+press *Download print file*, and upload that file to Gelato.
+
+**Reopening a design:** `/?design=<id>` shows exactly what the customer saw. Uploaded points are rounded once,
+on upload, to the stored precision, so the preview and the saved copy are built from the same numbers.
+Nothing in a saved design is trusted when it is opened: unknown options fall back to the defaults, colours
+must be plain hex, text is cut to the field lengths.
+
+**Prices** are shown per delivery country: Germany has its own tier, every other EU country the `eu` tier.
+`GET /api/context` returns the visitor's country. Shopify is the source of truth and charges by the delivery
+address at checkout; the price table, variant IDs, shop domain and shipping rule shown here live in the
+"Shop" block at the end of `public/js/core/config.js` and must be kept in step with Shopify by hand.
+
+The server code is `src/worker.js`. It only runs for `/api/*`; everything else is served straight from `public/`.
+

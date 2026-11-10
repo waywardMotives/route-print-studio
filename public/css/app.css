@@ -156,3 +156,15 @@ label.f select{appearance:none;-webkit-appearance:none;padding-right:40px;cursor
 .checks-3{grid-template-columns:repeat(3,auto);justify-content:start;gap:8px 22px}
 .accent-on{margin-top:12px}
 .layer-sw[hidden]{display:none}
+
+/* Print tab: price and Add to cart */
+.buy{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center}
+.buy-price{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.buy-price strong{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.buy-price span{font-size:13px;color:var(--muted)}
+.btn-buy{font:inherit;font-size:15px;font-weight:700;color:var(--bg);background:var(--fg);border:0;border-radius:999px;padding:13px 24px;cursor:pointer;white-space:nowrap}
+.btn-buy:disabled{opacity:.55;cursor:progress}
+.btn-buy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.buy-note{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)}
+.buy-note[hidden]{display:none}
+.buy-status{color:var(--fg);font-weight:600}
